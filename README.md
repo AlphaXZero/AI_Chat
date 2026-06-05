@@ -9,6 +9,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] Change API url ?
 - [ ] Update simpleaskservice (favorite ia) ?
+- [ ] fix warning simpleaskservice
 - [ ] look further the contoler
 - [ ] Mark down answer (course)
 - [ ] Conversational chat interface
