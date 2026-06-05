@@ -50,9 +50,22 @@ A single command runs both the back-end and front-end at once:
 composer run dev
 ```
 
-The app is then available at `http://localhost:8000`.
 
 > **Note:** In production, you don't run `npm run dev`. You compile the assets once with `npm run build`, and only the back-end runs (served by Nginx or Apache).
 
+## Config API key
+Generate key on open https://openrouter.ai/
 
+Then i added in `.env` and `.env.example`
+```php
+OPENROUTER_API_KEY=VotreCélesteCléAPI
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+```
+and i also added this in `/config/services.php`
+```php
+'openrouter' => [
+    'api_key' => env('OPENROUTER_API_KEY'),
+    'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+],
+```
 

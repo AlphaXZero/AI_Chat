@@ -4,8 +4,9 @@ This project is a chat application (in the spirit of ChatGPT) dedicated to learn
 
 This project also serves as a learning resource: it's built step by step, and each step is documented in [`docs/tutorial.md`](docs/tutorial.md) so it can be rebuilt from scratch anytime.
 
-## Features
+## TO DO list
 
+- [ ] Change API url ?
 - [ ] Conversational chat interface
 - [ ] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] User authentication
