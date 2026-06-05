@@ -6,10 +6,10 @@ This project also serves as a learning resource: it's built step by step, and ea
 
 ## TO DO list
 
+- [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] Change API url ?
+- [ ] update simpleaskservice et controller ?
 - [ ] Conversational chat interface
-- [ ] LLM API integration via [OpenRouter](https://openrouter.ai)
-- [ ] User authentication
 - [ ] Conversation history (stored in the database)
 - [ ] Resume and manage past conversations
 - [ ] Streaming responses (rendered as they are generated)
