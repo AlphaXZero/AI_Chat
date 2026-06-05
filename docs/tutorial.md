@@ -203,3 +203,70 @@ In the same time i added a system prompt in `resources/views/prompts/system.blad
 Tu es un assistant de chat. La date et lheure actuelle est le {{ $now }}.
 Tu es actuellement utilisé par {{ $user }}.
 ```
+
+## Controller AskController
+First i added routes in `routes/web.php`
+```php
+use App\Http\Controllers\AskController;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/ask', [AskController::class, 'index'])->name('ask.index');
+    Route::post('/ask', [AskController::class, 'ask'])->name('ask.post');
+});
+```
+
+then the controler in `app/Http/Controllers/AskController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\SimpleAskService;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class AskController extends Controller
+{
+    public function __construct(private SimpleAskService $askService) {}
+
+    public function index()
+    {
+        return Inertia::render('Ask/Index', [
+            'models' => $this->askService->getModels(),
+            'selectedModel' => $this->askService::DEFAULT_MODEL,
+        ]);
+    }
+
+    public function ask(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string',
+            'model' => 'required|string',
+        ]);
+
+        $response = null;
+        $error = null;
+        $messages = [[
+            'role' => 'user',
+            'content' => $request->message,
+        ]];
+
+        try {
+            $response = $this->askService->sendMessage(
+                messages: $messages,
+                model: $request->model
+            );
+        } catch (\Exception $e) {
+            $error = $e->getMessage();
+        }
+
+        return Inertia::render('Ask/Index', [
+            'models' => $this->askService->getModels(),
+            'selectedModel' => $request->model,
+            'message' => $request->message,
+            'response' => $response,
+            'error' => $error,
+        ]);
+    }
+}
+```
