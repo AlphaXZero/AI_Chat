@@ -8,7 +8,8 @@ This project also serves as a learning resource: it's built step by step, and ea
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] Change API url ?
-- [ ] update simpleaskservice et controller ?
+- [ ] Update simpleaskservice et controller ?
+- [ ] Mark down answer (course)
 - [ ] Conversational chat interface
 - [ ] Conversation history (stored in the database)
 - [ ] Resume and manage past conversations
