@@ -351,3 +351,50 @@ we also need to install the marksown modulul
 npm install markdown-it highlight.js
 ```
 and create `ressources/js/components/MarkdownRenderer.vue`
+
+## database
+### create model, migration, factory, seeder
+see the `docs/class_diagram.puml`
+```bash
+php artisan make:migration add_favorite_ia_to_users_table --table=users
+php artisan make:model Conversation -mfs
+php artisan make:model Image -mfs
+php artisan make:model Message -mfs
+```
+### migrations
+and we fill the migrations in `database/migrations/xxxx`, for example add_favorite_ia_to_users_table.php
+```php
+public function up(): void
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->string('favorite_ia')->nullable()->after('password');
+    });
+}
+
+public function down(): void
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->dropColumn('favorite_ia');
+    });
+}
+```
+then
+```bash
+php artisan migrate`
+```
+### eloquent model
+to convert database in objects we need to make models
+for example, in /app/Models/Conversation.php
+```php
+class Conversation extends Model
+{
+    protected $fillable = ['title', 'favorite_ia', 'user_id'];
+
+    public function messages() {
+        return $this->hasMany(Message::class);
+    }
+    public function user() {
+        return $this->belongsTo(User::class);
+    }
+}
+```
