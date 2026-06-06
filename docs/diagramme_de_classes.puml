@@ -1,0 +1,42 @@
+@startuml
+class User {
+  id: int
+  name: string
+  email: string
+  password: string
+  favorite_ia: string
+}
+class Conversation {
+  id: int
+  title: string
+  favorite_ia: string
+  created_at: timestamp
+  updated_at: timestamp
+}
+class Message {
+  id: int
+  role: string
+  created_at: timestamp
+}
+abstract class Content {
+  id: int
+  type: string
+  position: int
+}
+class Text {
+  content: string
+}
+class Image {
+  url: string
+  placeholder: string
+}
+class PDF {
+  url: string
+}
+User "1" -- "0..*" Conversation : has >
+Conversation "1" -- "1..*" Message : is made of >
+Message "1" -- "1..*" Content : is made of >
+Content <|-- Text
+Content <|-- Image
+Content <|-- PDF
+@enduml

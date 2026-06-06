@@ -346,3 +346,8 @@ const submit = () => {
     </div>
 </template>
 ```
+we also need to install the marksown modulul
+```bash
+npm install markdown-it highlight.js
+```
+and create `ressources/js/components/MarkdownRenderer.vue`
