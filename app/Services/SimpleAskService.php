@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Http;
  */
 class SimpleAskService
 {
-    public const DEFAULT_MODEL = 'openai/gpt-5-mini';
+    public const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
 
     private string $apiKey;
     private string $baseUrl;

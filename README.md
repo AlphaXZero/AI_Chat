@@ -10,6 +10,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 - [ ] Change API url ?
 - [ ] Update simpleaskservice (favorite ia) ?
 - [ ] check route in routes/web.php
+- [ ] look further js/components/MarkdownRenderer.vue
 - [ ] fix warning simpleaskservice
 - [ ] look further the contoler
 - [ ] Mark down answer (course)
