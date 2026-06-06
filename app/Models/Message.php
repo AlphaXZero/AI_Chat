@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Message extends Model
 {
-    /** @use HasFactory<\Database\Factories\MessageFactory> */
-    use HasFactory;
+    protected $fillable = ['conversation_id', 'role', 'content'];
+
+    public function conversation()
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+    public function images()
+    {
+        return $this->hasMany(Image::class);
+    }
 }

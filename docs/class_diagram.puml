@@ -16,27 +16,15 @@ class Conversation {
 class Message {
   id: int
   role: string
+  content: string
   created_at: timestamp
 }
-abstract class Content {
-  id: int
-  type: string
-  position: int
-}
-class Text {
-  content: string
-}
 class Image {
+  id: int
   url: string
   placeholder: string
 }
-class PDF {
-  url: string
-}
 User "1" -- "0..*" Conversation : has >
 Conversation "1" -- "1..*" Message : is made of >
-Message "1" -- "1..*" Content : is made of >
-Content <|-- Text
-Content <|-- Image
-Content <|-- PDF
+Message "1" -- "0..*" Image : has >
 @enduml

@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Image extends Model
 {
-    /** @use HasFactory<\Database\Factories\ImageFactory> */
-    use HasFactory;
+    protected $fillable = ['message_id', 'url'];
+
+    public function message()
+    {
+        return $this->belongsTo(Message::class);
+    }
 }
