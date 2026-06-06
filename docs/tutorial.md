@@ -380,7 +380,7 @@ public function down(): void
 ```
 then
 ```bash
-php artisan migrate`
+php artisan migrate
 ```
 ### eloquent model
 to convert database in objects we need to make models
