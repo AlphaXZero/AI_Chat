@@ -16,6 +16,7 @@ class ConversationController extends Controller
             'selectedModel' => $conversation->favorite_ia,
             'conversation'  => $conversation,
             'messages'      => $conversation->messages()->orderBy('created_at')->get(),
+
         ]);
     }
 }

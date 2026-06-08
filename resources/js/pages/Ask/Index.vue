@@ -1,7 +1,9 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import { usePage } from '@inertiajs/vue3'
 
+const page = usePage()
 const props = defineProps({
     models: Array,
     selectedModel: String,
@@ -27,6 +29,9 @@ const submit = () => {
 }
 </script>
 <template>
+    <div id="sidebar">
+        <div v-for="conv in page.props.conversations" :key="conversations.id">{{ conv.title ?? "default" }}</div>
+    </div>
 
     <Head title="Poser une question" />
 

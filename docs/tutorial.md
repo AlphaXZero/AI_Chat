@@ -636,6 +636,23 @@ class ConversationController extends Controller
 }
 ```
 
+I also edited the AskController in order to redirect to the new route
+
+## conversatoins list
+i chose to make a global share to avoid repeating in each controller
+in `app/Http/Middleware/HandleInertiaRequests.php`
+i added in the share array this : 
+```php
+            'conversations' => fn() => $request->user()->conversations()->orderBy('updated_at', 'desc')->get(),
+```
+
+we can now access in vue it with 
+```vue
+import { usePage } from '@inertiajs/vue3'
+
+const page = usePage()
+// puis tu accèdes à page.props.conversations
+```
 
 ## Misc
 
