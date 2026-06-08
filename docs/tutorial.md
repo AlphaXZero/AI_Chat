@@ -1,6 +1,6 @@
-# Tutorial laravel + vue
+# Tutorial Laravel + Vue
 
-This tutorial documents how the project is built, so it can be rebuilt from scratch anytime.
+This tutorial documents how the project is built, so I can rebuild it from scratch anytime.
 
 ## Create the project
 
@@ -10,7 +10,7 @@ Create a new Laravel project:
 laravel new project-name
 ```
 
-During installation, choose the following options:
+During installation, I chose the following options:
 
 | Option | Choice |
 |---|---|
@@ -50,27 +50,34 @@ A single command runs both the back-end and front-end at once:
 composer run dev
 ```
 
-
 > **Note:** In production, you don't run `npm run dev`. You compile the assets once with `npm run build`, and only the back-end runs (served by Nginx or Apache).
 
 ## Config API key
-Generate key on open https://openrouter.ai/
 
-Then i added in `.env` and `.env.example`
+Generate a key on https://openrouter.ai/
+
+Then I added it in `.env` and `.env.example`:
+
 ```php
-OPENROUTER_API_KEY=VotreCélesteCléAPI
+OPENROUTER_API_KEY=YourApiKeyHere
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
-and i also added this in `/config/services.php`
+
+And I also added this in `/config/services.php`:
+
 ```php
 'openrouter' => [
     'api_key' => env('OPENROUTER_API_KEY'),
     'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
 ],
 ```
-## class askservice
+
+## SimpleAskService
+
 ### SimpleAskService
-in `app/Services/SimpleAskService.php`, i added this part of code:
+
+In `app/Services/SimpleAskService.php`, I added this code:
+
 ```php
 <?php
 
@@ -100,17 +107,6 @@ class SimpleAskService
 
     /**
      * Récupère la liste des modèles disponibles.
-     *
-     * @return array<int, array{
-     *     id: string,
-     *     name: string,
-     *     description: string,
-     *     context_length: int,
-     *     max_completion_tokens: int,
-     *     input_modalities: array<string>,
-     *     output_modalities: array<string>,
-     *     supported_parameters: array<string>
-     * }>
      */
     public function getModels(): array
     {
@@ -139,15 +135,6 @@ class SimpleAskService
 
     /**
      * Envoie un message et retourne la réponse du modèle.
-     *
-     * @param array<int, array{
-     *     role: 'assistant'|'system'|'tool'|'user',
-     *     content: array<int, array{
-     *         type: 'image_url'|'text',
-     *         text?: string,
-     *         image_url?: array{url: string, detail?: string}
-     *     }>|string
-     * }> $messages
      */
     public function sendMessage(array $messages, ?string $model = null, float $temperature = 1.0): string
     {
@@ -179,8 +166,6 @@ class SimpleAskService
 
     /**
      * Retourne le prompt système.
-     *
-     * @return array{role: 'system', content: string}
      */
     private function getSystemPrompt(): array
     {
@@ -197,15 +182,22 @@ class SimpleAskService
     }
 }
 ```
-### System Prompt
-In the same time i added a system prompt in `resources/views/prompts/system.blade.php`
-```php
-Tu es un assistant de chat. La date et lheure actuelle est le {{ $now }}.
+
+> **Note:** `sendMessage` returns a `string` (the model's reply, extracted from `choices.0.message.content`). It also throws a `RuntimeException` if the API call fails — that's why I wrap the call in a try/catch later.
+
+### System prompt
+
+At the same time I added a system prompt in `resources/views/prompts/system.blade.php`:
+
+```blade
+Tu es un assistant de chat. La date et l'heure actuelle est le {{ $now }}.
 Tu es actuellement utilisé par {{ $user }}.
 ```
 
-## Controller AskController
-First i added routes in `routes/web.php`
+## AskController
+
+First I added the routes in `routes/web.php`:
+
 ```php
 use App\Http\Controllers\AskController;
 
@@ -215,7 +207,8 @@ Route::middleware('auth')->group(function () {
 });
 ```
 
-then the controler in `app/Http/Controllers/AskController.php`:
+Then the controller in `app/Http/Controllers/AskController.php` (first version, without history):
+
 ```php
 <?php
 
@@ -270,10 +263,12 @@ class AskController extends Controller
     }
 }
 ```
-## front
-in `resources/js/pages/Ask/Index.vue`
-### Props
-```php
+
+## Front-end
+
+In `resources/js/pages/Ask/Index.vue`:
+
+```vue
 <script setup>
 import { useForm } from '@inertiajs/vue3'
 import { ask } from '@/actions/App/Http/Controllers/AskController'
@@ -294,9 +289,9 @@ const form = useForm({
 const submit = () => {
     form.post(ask())
 }
+</script>
 
 <template>
-
     <Head title="Poser une question" />
 
     <div class="min-h-screen bg-neutral-950 text-neutral-100">
@@ -310,7 +305,7 @@ const submit = () => {
                     <label class="mb-1 block text-sm font-medium">Modèle</label>
                     <select v-model="form.model" class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2">
                         <option v-for="model in props.models" :key="model.id" :value="model.id">
-                            {{ model }}
+                            {{ model.name }}
                         </option>
                     </select>
                 </div>
@@ -346,24 +341,40 @@ const submit = () => {
     </div>
 </template>
 ```
-we also need to install the marksown modulul
+
+> **Note:** In the `<option>` I display `{{ model.name }}` and not `{{ model }}`, because each model is an object (see `getModels()`), not a string. Displaying the whole object would print `[object Object]`.
+
+We also need to install the markdown module:
+
 ```bash
 npm install markdown-it highlight.js
 ```
-and create `ressources/js/components/MarkdownRenderer.vue`
-we have now a basic chat without history
-## database
-we need db to stock and retrieve history
-### create model, migration, factory, seeder
-see the `docs/class_diagram.puml`
+
+And create `resources/js/components/MarkdownRenderer.vue` (to render markdown and highlight code blocks).
+
+At this point we have a basic chat, but without history.
+
+## Database
+
+We need a database to store and retrieve the conversation history.
+
+### Create model, migration, factory, seeder
+
+See `docs/class_diagram.puml`.
+
 ```bash
 php artisan make:migration add_favorite_ia_to_users_table --table=users
 php artisan make:model Conversation -mfs
 php artisan make:model Image -mfs
 php artisan make:model Message -mfs
 ```
-### migrations
-and we fill the migrations in `database/migrations/xxxx`, for example add_favorite_ia_to_users_table.php
+
+> **Note:** the `-mfs` flags create the **m**igration, **f**actory and **s**eeder along with the model in a single command.
+
+### Migrations
+
+Then I fill the migrations in `database/migrations/xxxx`. For example, `add_favorite_ia_to_users_table.php`:
+
 ```php
 public function up(): void
 {
@@ -379,13 +390,20 @@ public function down(): void
     });
 }
 ```
-then
+
+Then run:
+
 ```bash
 php artisan migrate
 ```
-### eloquent model
-to convert database in objects we need to make models
-for example, in /app/Models/Conversation.php
+
+
+### Eloquent models
+
+To turn database rows into objects we need models. The relations declared here are what let us write things like `$conversation->messages()`.
+
+For example, in `app/Models/Conversation.php`:
+
 ```php
 class Conversation extends Model
 {
@@ -399,8 +417,13 @@ class Conversation extends Model
     }
 }
 ```
-## modify the controller for history
-Before all we need to send the conversation_id in the Vue within the proprs:
+
+> **Important:** every field I pass to `create()` must be listed in `$fillable`, otherwise Eloquent silently ignores it (mass assignment protection). I also added a `conversations()` relation on the `User` model and `favorite_ia` to its `$fillable`.
+
+## Modify the controller to handle history
+
+Before anything, we need to send the `conversation_id` from the Vue within the form:
+
 ```vue
 const form = useForm({
     message: props.message ?? '',
@@ -409,7 +432,10 @@ const form = useForm({
 })
 ```
 
-First, we collect the $request made by the Vue and we use validate() to ensure the incoming data is correct:
+The `?? null` handles the "new conversation" case: if there is no active conversation, we send `null`, and the controller will create a new one.
+
+First, we collect the `$request` made by the Vue and we use `validate()` to ensure the incoming data is correct:
+
 ```php
 public function ask(Request $request)
 {
@@ -420,64 +446,93 @@ public function ask(Request $request)
     ]);
 }
 ```
-Now that we are sure the request is valid, we check whether the conversation is a new one or an existing one. If it already exists we retrieve it, otherwise we create it.
+
+`validate()` does two things: it stops the request and returns the errors to the view if a rule fails, and it returns an array containing only the validated fields. `conversation_id` is `nullable` because a brand-new conversation has no id yet, and `exists:conversations,id` makes sure that, when an id *is* sent, it really exists in the database.
+
+Now that we are sure the request is valid, we check whether the conversation is a new one or an existing one. If it already exists we retrieve it, otherwise we create it:
 
 ```php
-    $conversation = ! empty($validated['conversation_id'])
-    ? Conversation::findOrFail($validated['conversation_id'])
+$conversation = ! empty($validated['conversation_id'])
+    ? $request->user()->conversations()->findOrFail($validated['conversation_id'])
     : $request->user()->conversations()->create([
         'title'       => null,
         'favorite_ia' => $validated['model'],
     ]);
 ```
-The "user_id" => $request->user()->id is useless because it's already handled by the Eloquent relation (conversations()), so I removed it.
-I also found a better way to retrieve the conversation to avoid another user to take an other user conversation.
+
+A few things I learned here:
+
+- I don't pass `'user_id' => $request->user()->id` because it's already handled by the Eloquent relation (`conversations()`). Creating through the relation fills the foreign key automatically.
+- I retrieve the conversation through `$request->user()->conversations()->findOrFail(...)` instead of `Conversation::findOrFail(...)`. This searches **only** among the current user's conversations, so a user can't access another user's conversation by guessing an id (it returns a 404 instead). It also avoids writing a manual check.
+- `title` is `null` on creation because it will be generated later, after the first reply.
+
+Then we store the message typed by the user in the `messages` table:
+
 ```php
-$request->user()->conversations()->findOrFail($validated['conversation_id'])
+$conversation->messages()->create([
+    'role'    => 'user',
+    'content' => $validated['message'],
+]);
 ```
 
-Then we add the message typed by the user in the messages table
-```php
-    $conversation->messages()->create([
-        'role' => "user",
-        "content" => $validated["message"],
-    ]);
-```
-After this, i created a $history who will contains everymessages, i also formated it afterward to be used in the service
+I store the user message **before** calling the API, for two reasons: if the API crashes the message isn't lost, and it needs to already be in the database so it's included in the history I build next.
+
+After this, I build a `$history` that contains every message of the conversation, then I format it so it can be passed to the service. The API has no memory between calls, so I have to send the whole conversation every time, not just the last message:
+
 ```php
 $history = $conversation->messages()->orderBy('created_at')->get();
-$formated_history = $history->map(fn($message) => ['role' => $message->role, 'content' => $message->content])->toArray();
-```
-then we have a try catch which will send the message thanks to the srvice `/http/services/SimpleAskService.php`
-```php
-        try {
-            $response = $this->askService->sendMessage(
-                messages: $formated_history,
-                model: $validated['model']
-            );
-            $conversation->messages()->create([
-                'role' => "assistant",
-                'content' => $response,
-            ]);
-        } catch (\Exception $e) {
-            $error = $e->getMessage();
-        }
-```
-Finally i send the props to the vue
-```php
-        return Inertia::render('Ask/Index', [
-            'models'        => $this->askService->getModels(),
-            'selectedModel' => $validated['model'],
-            'conversation'  => $conversation,
-            'messages'      => $conversation->messages()->orderBy('created_at')->get(),
-            'error'         => $error,
-        ]);
-    }
+
+$formated_history = $history
+    ->map(fn ($message) => ['role' => $message->role, 'content' => $message->content])
+    ->toArray();
 ```
 
+> **Note:** `->toArray()` matters. `sendMessage(array $messages, ...)` expects a plain array, but `->map()` returns a Collection. Without `->toArray()` the call would fail.
+
+Then I have a try/catch that sends the message through the service `app/Services/SimpleAskService.php`. I wrap it in a try/catch because `sendMessage` throws an exception when the API fails. This way I only store the assistant's reply when the call actually succeeds:
+
+```php
+try {
+    $response = $this->askService->sendMessage(
+        messages: $formated_history,
+        model: $validated['model']
+    );
+
+    $conversation->messages()->create([
+        'role'    => 'assistant',
+        'content' => $response,
+    ]);
+} catch (\Exception $e) {
+    $error = $e->getMessage();
+}
+```
+
+Finally I send the props to the Vue. I return the full list of `messages` (re-fetched from the database, so it includes the assistant reply I just stored) instead of a single `response`, so the view can display the whole conversation:
+
+```php
+return Inertia::render('Ask/Index', [
+    'models'        => $this->askService->getModels(),
+    'selectedModel' => $validated['model'],
+    'conversation'  => $conversation,
+    'messages'      => $conversation->messages()->orderBy('created_at')->get(),
+    'error'         => $error,
+]);
+```
+
+> **TODO (still to do):** generate a title automatically after the first reply (second API call), then `update()` the conversation's `title`. The view also still needs to be adapted to loop over `messages` instead of showing a single `response`.
+
 ## Misc
-### change database table
-pour faire une nouvelle migration:
-php artisan make:migration add_favorite_ia_to_users_table --table=user
-pour rollbakc :
+
+### Change a database table
+
+To create a new migration:
+
+```bash
+php artisan make:migration add_favorite_ia_to_users_table --table=users
+```
+
+To roll back the last migration:
+
+```bash
 php artisan migrate:rollback
+```
