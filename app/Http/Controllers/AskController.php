@@ -53,12 +53,8 @@ class AskController extends Controller
             $error = $e->getMessage();
         }
 
-        return Inertia::render('Ask/Index', [
-            'models'        => $this->askService->getModels(),
-            'selectedModel' => $validated['model'],
-            'conversation'  => $conversation,
-            'messages'      => $conversation->messages()->orderBy('created_at')->get(),
-            'error'         => $error,
-        ]);
+        return redirect()
+            ->route('conversations.show', $conversation->id)
+            ->with('error', $error);
     }
 }
