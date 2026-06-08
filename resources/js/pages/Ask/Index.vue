@@ -45,6 +45,11 @@ const submit = () => {
                         </option>
                     </select>
                 </div>
+                <div v-for="message in props.messages" :key="message.id" :class="message.role === 'user'
+                    ? 'ml-auto max-w-[80%] rounded-xl bg-blue-600/20 border border-blue-800/40 p-4'
+                    : 'mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4'">
+                    <MarkdownRenderer :content="message.content" />
+                </div>
 
                 <!-- Champ question -->
                 <div>
@@ -67,13 +72,6 @@ const submit = () => {
             <!-- Erreur API -->
             <div v-if="props.error" class="rounded-md bg-red-950/30 p-4 text-red-400">
                 Erreur : {{ props.error }}
-            </div>
-
-            <!-- Réponse -->
-            <div v-for="message in props.messages" :key="message.id" :class="message.role === 'user'
-                ? 'ml-auto max-w-[80%] rounded-xl bg-blue-600/20 border border-blue-800/40 p-4'
-                : 'mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4'">
-                <MarkdownRenderer :content="message.content" />
             </div>
         </div>
     </div>

@@ -10,6 +10,10 @@ This project also serves as a learning resource: it's built step by step, and ea
 - [ ] profile picture becoming altered with every prompts
 - [ ] ia becoming bored and angry with every prompts
 - [ ] Change API url ?
+- [ ] auto scroll when 
+- [ ] enter to confirm question
+- [ ] navbar history
+- [ ] typerarea below questions
 - [ ] Update simpleaskservice (favorite ia) ?
 - [ ] check route in routes/web.php
 - [ ] look further js/components/MarkdownRenderer.vue
