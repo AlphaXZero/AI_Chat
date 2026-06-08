@@ -5,13 +5,13 @@ import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 const props = defineProps({
     models: Array,
     selectedModel: String,
-    message: String,
-    response: String,
+    conversation: Object,
+    messages: Array,
     error: String,
 })
 
 const form = useForm({
-    message: props.message ?? '',
+    message: "",
     model: props.selectedModel,
     conversation_id: props.conversation?.id ?? null,
 })
@@ -19,6 +19,10 @@ const form = useForm({
 const submit = () => {
     form.post('/ask', {
         preserveScroll: true,
+        onSuccess: () => {
+            form.reset('message')
+            form.conversation_id = props.conversation?.id ?? null
+        },
     })
 }
 </script>
@@ -66,8 +70,10 @@ const submit = () => {
             </div>
 
             <!-- Réponse -->
-            <div v-if="props.response" class="rounded-xl border border-neutral-700 p-4">
-                <MarkdownRenderer :content="props.response" />
+            <div v-for="message in props.messages" :key="message.id" :class="message.role === 'user'
+                ? 'ml-auto max-w-[80%] rounded-xl bg-blue-600/20 border border-blue-800/40 p-4'
+                : 'mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4'">
+                <MarkdownRenderer :content="message.content" />
             </div>
         </div>
     </div>
