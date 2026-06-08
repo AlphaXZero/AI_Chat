@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Conversation;
 
-
 class AskController extends Controller
 {
     public function __construct(private SimpleAskService $askService) {}
@@ -45,10 +44,19 @@ class AskController extends Controller
                 messages: $formated_history,
                 model: $validated['model']
             );
+
             $conversation->messages()->create([
                 'role' => "assistant",
                 'content' => $response,
             ]);
+            if ($conversation->title === null) {
+                $conv_title = $this->askService->sendMessage(
+                    messages: $formated_history,
+                    model: $validated['model'],
+                    system_prompt_file: "prompts.generate_title",
+                );
+                $conversation->update(['title' => trim($conv_title)]);
+            }
         } catch (\Exception $e) {
             $error = $e->getMessage();
         }

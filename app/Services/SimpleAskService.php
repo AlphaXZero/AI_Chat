@@ -75,10 +75,10 @@ class SimpleAskService
      *     }>|string
      * }> $messages
      */
-    public function sendMessage(array $messages, ?string $model = null, float $temperature = 1.0): string
+    public function sendMessage(array $messages, ?string $model = null, string $system_prompt_file = "prompts.system", float $temperature = 1.0): string
     {
         $model = $model ?? self::DEFAULT_MODEL;
-        $messages = [$this->getSystemPrompt(), ...$messages];
+        $messages = [$this->getSystemPrompt($system_prompt_file), ...$messages];
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
@@ -107,14 +107,14 @@ class SimpleAskService
      *
      * @return array{role: 'system', content: string}
      */
-    private function getSystemPrompt(): array
+    private function getSystemPrompt(string $system_prompt_file): array
     {
         $user = auth()->user()?->name ?? 'l\'utilisateur';
         $now = now()->locale('fr')->format('l d F Y H:i');
 
         return [
             'role' => 'system',
-            'content' => view('prompts.system', [
+            'content' => view($system_prompt_file, [
                 'now' => $now,
                 'user' => $user,
             ])->render(),

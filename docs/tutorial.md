@@ -654,6 +654,11 @@ const page = usePage()
 // puis tu accèdes à page.props.conversations
 ```
 
+so i changed the index.Vue
+```Vue
+
+```
+
 ## Misc
 
 ### Change a database table
