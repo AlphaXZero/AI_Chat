@@ -351,8 +351,9 @@ we also need to install the marksown modulul
 npm install markdown-it highlight.js
 ```
 and create `ressources/js/components/MarkdownRenderer.vue`
-
+we have now a basic chat without history
 ## database
+we need db to stock and retrieve history
 ### create model, migration, factory, seeder
 see the `docs/class_diagram.puml`
 ```bash
@@ -398,3 +399,85 @@ class Conversation extends Model
     }
 }
 ```
+## modify the controller for history
+Before all we need to send the conversation_id in the Vue within the proprs:
+```vue
+const form = useForm({
+    message: props.message ?? '',
+    model: props.selectedModel,
+    conversation_id: props.conversation?.id ?? null,
+})
+```
+
+First, we collect the $request made by the Vue and we use validate() to ensure the incoming data is correct:
+```php
+public function ask(Request $request)
+{
+    $validated = $request->validate([
+        'message'         => 'required|string',
+        'model'           => 'required|string',
+        'conversation_id' => 'nullable|exists:conversations,id',
+    ]);
+}
+```
+Now that we are sure the request is valid, we check whether the conversation is a new one or an existing one. If it already exists we retrieve it, otherwise we create it.
+
+```php
+    $conversation = ! empty($validated['conversation_id'])
+    ? Conversation::findOrFail($validated['conversation_id'])
+    : $request->user()->conversations()->create([
+        'title'       => null,
+        'favorite_ia' => $validated['model'],
+    ]);
+```
+The "user_id" => $request->user()->id is useless because it's already handled by the Eloquent relation (conversations()), so I removed it.
+I also found a better way to retrieve the conversation to avoid another user to take an other user conversation.
+```php
+$request->user()->conversations()->findOrFail($validated['conversation_id'])
+```
+
+Then we add the message typed by the user in the messages table
+```php
+    $conversation->messages()->create([
+        'role' => "user",
+        "content" => $validated["message"],
+    ]);
+```
+After this, i created a $history who will contains everymessages, i also formated it afterward to be used in the service
+```php
+$history = $conversation->messages()->orderBy('created_at')->get();
+$formated_history = $history->map(fn($message) => ['role' => $message->role, 'content' => $message->content])->toArray();
+```
+then we have a try catch which will send the message thanks to the srvice `/http/services/SimpleAskService.php`
+```php
+        try {
+            $response = $this->askService->sendMessage(
+                messages: $formated_history,
+                model: $validated['model']
+            );
+            $conversation->messages()->create([
+                'role' => "assistant",
+                'content' => $response,
+            ]);
+        } catch (\Exception $e) {
+            $error = $e->getMessage();
+        }
+```
+Finally i send the props to the vue
+```php
+        return Inertia::render('Ask/Index', [
+            'models'        => $this->askService->getModels(),
+            'selectedModel' => $validated['model'],
+            'conversation'  => $conversation,
+            'messages'      => $conversation->messages()->orderBy('created_at')->get(),
+            'error'         => $error,
+        ]);
+    }
+```
+
+## Misc
+### change database table
+pour faire une nouvelle migration:
+php artisan make:migration add_favorite_ia_to_users_table --table=user
+pour rollbakc :
+php artisan migrate:rollback

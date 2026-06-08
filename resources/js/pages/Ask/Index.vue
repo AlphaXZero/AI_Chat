@@ -13,6 +13,7 @@ const props = defineProps({
 const form = useForm({
     message: props.message ?? '',
     model: props.selectedModel,
+    conversation_id: props.conversation?.id ?? null,
 })
 
 const submit = () => {
