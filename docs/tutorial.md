@@ -602,6 +602,13 @@ const submit = () => {
     </div>
 </template>
 ```
+## handle reload destory and history conversation
+In the `routes/web.php`
+we need to add the routes in the middleware('auth')->group because we want the user to be connected.    
+but it has to change with the conversationid
+```php
+    Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+```
 
 ## Misc
 

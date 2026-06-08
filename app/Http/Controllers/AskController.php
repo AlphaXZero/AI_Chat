@@ -38,7 +38,6 @@ class AskController extends Controller
             'role' => "user",
             "content" => $validated["message"],
         ]);
-        //Todo: générer titre sur la premièère reponser ?
         $history = $conversation->messages()->orderBy('created_at')->get();
         $formated_history = $history->map(fn($message) => ['role' => $message->role, 'content' => $message->content])->toArray();
         try {
