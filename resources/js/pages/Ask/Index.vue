@@ -30,7 +30,7 @@ const submit = () => {
 </script>
 <template>
     <div id="sidebar">
-        <div v-for="conv in page.props.conversations" :key="conversations.id">{{ conv.title ?? "default" }}</div>
+        <div v-for="conv in page.props.conversations" :key="conv.id">{{ conv.title ?? "default" }}</div>
     </div>
 
     <Head title="Poser une question" />
