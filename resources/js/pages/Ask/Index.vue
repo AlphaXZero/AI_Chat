@@ -71,6 +71,18 @@ const submit = () => {
                         <MarkdownRenderer :content="message.content" />
                     </div>
 
+                    <!-- Loader pendant l'appel API -->
+                    <div v-if="form.processing"
+                        class="mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4">
+                        <span class="flex gap-1.5">
+                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"></span>
+                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"
+                                style="animation-delay: 0.15s"></span>
+                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"
+                                style="animation-delay: 0.3s"></span>
+                        </span>
+                    </div>
+
                     <!-- Champ question -->
                     <div>
                         <label class="mb-1 block text-sm font-medium">Votre question</label>
