@@ -7,6 +7,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] enter key to chat
 - [ ] multiple systems prompts
 - [ ] handle error
 - [ ] profile picture becoming altered with every prompts

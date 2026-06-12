@@ -1,7 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-import { usePage } from '@inertiajs/vue3'
+import { usePage, Link } from '@inertiajs/vue3'
 
 const page = usePage()
 const props = defineProps({
@@ -30,7 +30,8 @@ const submit = () => {
 </script>
 <template>
     <div id="sidebar">
-        <div v-for="conv in page.props.conversations" :key="conv.id">{{ conv.title ?? "default" }}</div>
+        <Link v-for="conv in page.props.conversations" :key="conv.id" :href="`/conversations/${conv.id}`">{{
+            conv.title ?? "default" }}</Link>
     </div>
 
     <Head title="Poser une question" />

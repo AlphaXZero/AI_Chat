@@ -654,10 +654,15 @@ const page = usePage()
 // puis tu accèdes à page.props.conversations
 ```
 
-so i changed the index.Vue
+so i added this the index.Vue
 ```Vue
-
+        <Link v-for="conv in page.props.conversations" :key="conv.id" :href="`/conversations/${conv.id}`">{{
+            conv.title ?? "default" }}</Link>
 ```
+
+The link come from inertia and able to change page without reloading everything
+the key argument allow to update the list dynamically
+
 
 ## Misc
 
