@@ -51,7 +51,7 @@ class AskController extends Controller
             ]);
             if ($conversation->title === null) {
                 $conv_title = $this->askService->sendMessage(
-                    messages: $formated_history,
+                    messages:[...$formated_history, ['role' => 'assistant', 'content' => $response]],
                     model: $validated['model'],
                     system_prompt_file: "prompts.generate_title",
                 );
