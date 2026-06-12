@@ -1,8 +1,10 @@
-# Tutorial Laravel + Vue
+# Tutorial: Building a ChatGPT-like app with Laravel + Vue + Inertia
 
-This tutorial documents how the project is built, so I can rebuild it from scratch anytime.
+This tutorial documents how I built the project, step by step, so I can rebuild it from scratch anytime. It covers a multi-conversation chat: listing conversations, picking a model, storing history, auto-generating titles, a loading indicator, and markdown rendering.
 
-## Create the project
+---
+
+## 1. Create the project
 
 Create a new Laravel project:
 
@@ -10,7 +12,7 @@ Create a new Laravel project:
 laravel new project-name
 ```
 
-During installation, I chose the following options:
+During installation, I chose:
 
 | Option | Choice |
 |---|---|
@@ -26,17 +28,19 @@ cd project-name
 npm install
 ```
 
-## Run the project
+---
+
+## 2. Run the project
 
 ### Standard method
 
-Start the back-end server (routes, API, database):
+Back-end server (routes, API, database):
 
 ```bash
 php artisan serve
 ```
 
-In a second terminal, start the front-end server (asset compilation and hot reload):
+In a second terminal, the front-end server (asset compilation + hot reload):
 
 ```bash
 npm run dev
@@ -44,26 +48,28 @@ npm run dev
 
 ### Quick method
 
-A single command runs both the back-end and front-end at once:
+A single command runs both at once:
 
 ```bash
 composer run dev
 ```
 
-> **Note:** In production, you don't run `npm run dev`. You compile the assets once with `npm run build`, and only the back-end runs (served by Nginx or Apache).
+> **Note:** In production you don't run `npm run dev`. You compile the assets once with `npm run build`, and only the back-end runs (served by Nginx or Apache).
 
-## Config API key
+---
+
+## 3. Configure the API key
 
 Generate a key on https://openrouter.ai/
 
-Then I added it in `.env` and `.env.example`:
+Add it to `.env` and `.env.example`:
 
-```php
+```
 OPENROUTER_API_KEY=YourApiKeyHere
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
 
-And I also added this in `/config/services.php`:
+Then register it in `config/services.php`:
 
 ```php
 'openrouter' => [
@@ -72,11 +78,15 @@ And I also added this in `/config/services.php`:
 ],
 ```
 
-## SimpleAskService
+> **Why `config/services.php` and not read `env()` directly?** In Laravel you should read env values through `config()`, never `env()` outside config files — config gets cached in production (`php artisan config:cache`) and `env()` returns `null` once that happens.
 
-### SimpleAskService
+---
 
-In `app/Services/SimpleAskService.php`, I added this code:
+## 4. The SimpleAskService
+
+This service is the only place that talks to OpenRouter. Keeping the HTTP logic here keeps the controllers clean.
+
+In `app/Services/SimpleAskService.php`:
 
 ```php
 <?php
@@ -87,11 +97,6 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 
-/**
- * Service simplifié pour communiquer avec l'API OpenRouter.
- *
- * Exemple pédagogique utilisant le client HTTP de Laravel.
- */
 class SimpleAskService
 {
     public const DEFAULT_MODEL = 'openai/gpt-5-mini';
@@ -105,9 +110,7 @@ class SimpleAskService
         $this->baseUrl = rtrim(config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
     }
 
-    /**
-     * Récupère la liste des modèles disponibles.
-     */
+    /** Fetch the list of available models. */
     public function getModels(): array
     {
         return cache()->remember('openrouter.models', now()->addHour(), function (): array {
@@ -128,18 +131,23 @@ class SimpleAskService
                     'supported_parameters' => $model['supported_parameters'] ?? [],
                 ])
                 ->values()
-                ->toArray()
-            ;
+                ->toArray();
         });
     }
 
     /**
-     * Envoie un message et retourne la réponse du modèle.
+     * Send a list of messages and return the model's reply.
+     * The $system_prompt_file parameter lets me swap the system prompt
+     * (I use a different one to generate conversation titles).
      */
-    public function sendMessage(array $messages, ?string $model = null, float $temperature = 1.0): string
-    {
+    public function sendMessage(
+        array $messages,
+        ?string $model = null,
+        string $system_prompt_file = 'prompts.system',
+        float $temperature = 1.0
+    ): string {
         $model = $model ?? self::DEFAULT_MODEL;
-        $messages = [$this->getSystemPrompt(), ...$messages];
+        $messages = [$this->getSystemPrompt($system_prompt_file), ...$messages];
 
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->apiKey,
@@ -152,10 +160,8 @@ class SimpleAskService
                 'model' => $model,
                 'messages' => $messages,
                 'temperature' => $temperature,
-            ])
-        ;
+            ]);
 
-        // Gestion des erreurs
         if ($response->failed()) {
             $error = $response->json('error.message', 'Erreur inconnue');
             throw new \RuntimeException("Erreur API: {$error}");
@@ -164,17 +170,15 @@ class SimpleAskService
         return $response->json('choices.0.message.content', '');
     }
 
-    /**
-     * Retourne le prompt système.
-     */
-    private function getSystemPrompt(): array
+    /** Build the system prompt from a Blade view. */
+    private function getSystemPrompt(string $system_prompt_file): array
     {
         $user = auth()->user()?->name ?? 'l\'utilisateur';
         $now = now()->locale('fr')->format('l d F Y H:i');
 
         return [
             'role' => 'system',
-            'content' => view('prompts.system', [
+            'content' => view($system_prompt_file, [
                 'now' => $now,
                 'user' => $user,
             ])->render(),
@@ -183,20 +187,26 @@ class SimpleAskService
 }
 ```
 
-> **Note:** `sendMessage` returns a `string` (the model's reply, extracted from `choices.0.message.content`). It also throws a `RuntimeException` if the API call fails — that's why I wrap the call in a try/catch later.
+> **Two things to remember about `sendMessage`:**
+> - It returns a `string` (the reply, extracted from `choices.0.message.content`). So in the controller I get plain text, nothing to unwrap.
+> - It throws a `RuntimeException` if the API call fails. That's why I wrap every call in a try/catch later.
 
 ### System prompt
 
-At the same time I added a system prompt in `resources/views/prompts/system.blade.php`:
+In `resources/views/prompts/system.blade.php`:
 
 ```blade
 Tu es un assistant de chat. La date et l'heure actuelle est le {{ $now }}.
 Tu es actuellement utilisé par {{ $user }}.
 ```
 
-## AskController
+I later added a second prompt `resources/views/prompts/generate_title.blade.php`, used only to generate titles (see section 9).
 
-First I added the routes in `routes/web.php`:
+---
+
+## 5. First version of the controller (no history yet)
+
+Routes in `routes/web.php`:
 
 ```php
 use App\Http\Controllers\AskController;
@@ -207,7 +217,7 @@ Route::middleware('auth')->group(function () {
 });
 ```
 
-Then the controller in `app/Http/Controllers/AskController.php` (first version, without history):
+The controller — a single question, a single answer, nothing stored:
 
 ```php
 <?php
@@ -264,14 +274,16 @@ class AskController extends Controller
 }
 ```
 
-## Front-end
+---
+
+## 6. First version of the front-end
 
 In `resources/js/pages/Ask/Index.vue`:
 
 ```vue
 <script setup>
-import { useForm } from '@inertiajs/vue3'
-import { ask } from '@/actions/App/Http/Controllers/AskController'
+import { Head, useForm } from '@inertiajs/vue3'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 const props = defineProps({
     models: Array,
@@ -287,80 +299,37 @@ const form = useForm({
 })
 
 const submit = () => {
-    form.post(ask())
+    form.post('/ask')
 }
 </script>
 
 <template>
     <Head title="Poser une question" />
-
-    <div class="min-h-screen bg-neutral-950 text-neutral-100">
-        <div class="mx-auto max-w-3xl space-y-6 px-4 py-10">
-            <h1 class="text-2xl font-bold">Poser une question</h1>
-
-            <!-- Formulaire -->
-            <div class="space-y-4">
-                <!-- Sélecteur de modèle -->
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Modèle</label>
-                    <select v-model="form.model" class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2">
-                        <option v-for="model in props.models" :key="model.id" :value="model.id">
-                            {{ model.name }}
-                        </option>
-                    </select>
-                </div>
-
-                <!-- Champ question -->
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Votre question</label>
-                    <textarea v-model="form.message" rows="4"
-                        class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2"
-                        placeholder="Posez votre question..." />
-                    <p v-if="form.errors.message" class="mt-1 text-sm text-red-500">
-                        {{ form.errors.message }}
-                    </p>
-                </div>
-
-                <!-- Bouton -->
-                <button @click="submit" :disabled="form.processing"
-                    class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:opacity-50">
-                    {{ form.processing ? 'Envoi...' : 'Envoyer' }}
-                </button>
-            </div>
-
-            <!-- Erreur API -->
-            <div v-if="props.error" class="rounded-md bg-red-950/30 p-4 text-red-400">
-                Erreur : {{ props.error }}
-            </div>
-
-            <!-- Réponse -->
-            <div v-if="props.response" class="rounded-xl border border-neutral-700 p-4">
-                <MarkdownRenderer :content="props.response" />
-            </div>
-        </div>
-    </div>
+    <!-- model selector, textarea, button, single response -->
 </template>
 ```
 
-> **Note:** In the `<option>` I display `{{ model.name }}` and not `{{ model }}`, because each model is an object (see `getModels()`), not a string. Displaying the whole object would print `[object Object]`.
+> **Note:** in the model `<option>` I display `{{ model.name }}`, not `{{ model }}`. Each model is an object (see `getModels()`), so printing the whole object would show `[object Object]`.
 
-We also need to install the markdown module:
+Install the markdown renderer:
 
 ```bash
 npm install markdown-it highlight.js
 ```
 
-And create `resources/js/components/MarkdownRenderer.vue` (to render markdown and highlight code blocks).
+And create `resources/js/components/MarkdownRenderer.vue` to render markdown and highlight code blocks.
 
-At this point we have a basic chat, but without history.
+At this point I have a basic chat — but with no history. Everything is lost on reload.
 
-## Database
+---
 
-We need a database to store and retrieve the conversation history.
+## 7. The database
 
-### Create model, migration, factory, seeder
+I need a database to store and retrieve conversation history.
 
-See `docs/class_diagram.puml`.
+### Create models, migrations, factories, seeders
+
+See `docs/class_diagram.puml` for the data model.
 
 ```bash
 php artisan make:migration add_favorite_ia_to_users_table --table=users
@@ -369,11 +338,11 @@ php artisan make:model Image -mfs
 php artisan make:model Message -mfs
 ```
 
-> **Note:** the `-mfs` flags create the **m**igration, **f**actory and **s**eeder along with the model in a single command.
+> **Note:** the `-mfs` flags create the **m**igration, **f**actory and **s**eeder alongside the model in one command.
 
-### Migrations
+### Fill the migrations
 
-Then I fill the migrations in `database/migrations/xxxx`. For example, `add_favorite_ia_to_users_table.php`:
+Example, `add_favorite_ia_to_users_table.php`:
 
 ```php
 public function up(): void
@@ -391,65 +360,74 @@ public function down(): void
 }
 ```
 
+For the `messages` migration, I make the foreign key cascade on delete, so deleting a conversation also deletes its messages (no orphan rows):
+
+```php
+$table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
+```
+
 Then run:
 
 ```bash
 php artisan migrate
 ```
 
+### Eloquent models and relations
 
-### Eloquent models
+Models turn database rows into objects. The relations are what let me write `$conversation->messages()`.
 
-To turn database rows into objects we need models. The relations declared here are what let us write things like `$conversation->messages()`.
-
-For example, in `app/Models/Conversation.php`:
+`app/Models/Conversation.php`:
 
 ```php
 class Conversation extends Model
 {
     protected $fillable = ['title', 'favorite_ia', 'user_id'];
 
-    public function messages() {
+    public function messages()
+    {
         return $this->hasMany(Message::class);
     }
-    public function user() {
+
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 }
 ```
 
-> **Important:** every field I pass to `create()` must be listed in `$fillable`, otherwise Eloquent silently ignores it (mass assignment protection). I also added a `conversations()` relation on the `User` model and `favorite_ia` to its `$fillable`.
+> **Important:** every field I pass to `create()` must be listed in `$fillable`, otherwise Eloquent silently ignores it (mass-assignment protection). I also added a `conversations()` relation on the `User` model, and `favorite_ia` to its `$fillable`.
 
-## Modify the controller to handle history
+The relations go both ways: a `User` *has many* `Conversation`, a `Conversation` *belongs to* a `User` and *has many* `Message`, a `Message` *belongs to* a `Conversation`. Declaring both sides lets me navigate in either direction.
 
-Before anything, we need to send the `conversation_id` from the Vue within the form:
+---
 
-```vue
+## 8. Rework the controller to handle history
+
+### Send the conversation id from Vue
+
+```js
 const form = useForm({
-    message: props.message ?? '',
+    message: '',
     model: props.selectedModel,
     conversation_id: props.conversation?.id ?? null,
 })
 ```
 
-The `?? null` handles the "new conversation" case: if there is no active conversation, we send `null`, and the controller will create a new one.
+The `?? null` handles the "new conversation" case: if there's no active conversation, I send `null`, and the controller creates a fresh one.
 
-First, we collect the `$request` made by the Vue and we use `validate()` to ensure the incoming data is correct:
+### Validate the request
 
 ```php
-public function ask(Request $request)
-{
-    $validated = $request->validate([
-        'message'         => 'required|string',
-        'model'           => 'required|string',
-        'conversation_id' => 'nullable|exists:conversations,id',
-    ]);
-}
+$validated = $request->validate([
+    'message'         => 'required|string',
+    'model'           => 'required|string',
+    'conversation_id' => 'nullable|exists:conversations,id',
+]);
 ```
 
-`validate()` does two things: it stops the request and returns the errors to the view if a rule fails, and it returns an array containing only the validated fields. `conversation_id` is `nullable` because a brand-new conversation has no id yet, and `exists:conversations,id` makes sure that, when an id *is* sent, it really exists in the database.
+`validate()` does two things: it stops the request and returns errors to the view if a rule fails, and it returns an array of only the validated fields. `conversation_id` is `nullable` because a brand-new conversation has no id yet; `exists:conversations,id` makes sure that, when an id *is* sent, it really exists.
 
-Now that we are sure the request is valid, we check whether the conversation is a new one or an existing one. If it already exists we retrieve it, otherwise we create it:
+### Retrieve or create the conversation
 
 ```php
 $conversation = ! empty($validated['conversation_id'])
@@ -460,13 +438,13 @@ $conversation = ! empty($validated['conversation_id'])
     ]);
 ```
 
-A few things I learned here:
+What I learned here:
 
-- I don't pass `'user_id' => $request->user()->id` because it's already handled by the Eloquent relation (`conversations()`). Creating through the relation fills the foreign key automatically.
-- I retrieve the conversation through `$request->user()->conversations()->findOrFail(...)` instead of `Conversation::findOrFail(...)`. This searches **only** among the current user's conversations, so a user can't access another user's conversation by guessing an id (it returns a 404 instead). It also avoids writing a manual check.
-- `title` is `null` on creation because it will be generated later, after the first reply.
+- I don't pass `'user_id' => ...`. Creating through the relation (`conversations()`) fills the foreign key automatically.
+- I retrieve through `$request->user()->conversations()->findOrFail(...)` instead of `Conversation::findOrFail(...)`. This searches **only** the current user's conversations, so nobody can open someone else's conversation by guessing an id — it returns a 404 instead. No manual ownership check needed.
+- `title` is `null` on creation because it's generated later (section 9).
 
-Then we store the message typed by the user in the `messages` table:
+### Store the user message
 
 ```php
 $conversation->messages()->create([
@@ -475,9 +453,11 @@ $conversation->messages()->create([
 ]);
 ```
 
-I store the user message **before** calling the API, for two reasons: if the API crashes the message isn't lost, and it needs to already be in the database so it's included in the history I build next.
+I store the user message **before** calling the API: if the API crashes the message isn't lost, and it needs to be in the database so it's included in the history I build next.
 
-After this, I build a `$history` that contains every message of the conversation, then I format it so it can be passed to the service. The API has no memory between calls, so I have to send the whole conversation every time, not just the last message:
+### Build the history and call the API
+
+The API has no memory between calls, so I send the whole conversation every time, not just the last message:
 
 ```php
 $history = $conversation->messages()->orderBy('created_at')->get();
@@ -487,9 +467,7 @@ $formated_history = $history
     ->toArray();
 ```
 
-> **Note:** `->toArray()` matters. `sendMessage(array $messages, ...)` expects a plain array, but `->map()` returns a Collection. Without `->toArray()` the call would fail.
-
-Then I have a try/catch that sends the message through the service `app/Services/SimpleAskService.php`. I wrap it in a try/catch because `sendMessage` throws an exception when the API fails. This way I only store the assistant's reply when the call actually succeeds:
+> **Note:** `->toArray()` matters. `sendMessage(array $messages, ...)` expects a plain array, but `->map()` returns a Collection. Without `->toArray()`, the call fails.
 
 ```php
 try {
@@ -507,111 +485,56 @@ try {
 }
 ```
 
-Finally I send the props to the Vue. I return the full list of `messages` (re-fetched from the database, so it includes the assistant reply I just stored) instead of a single `response`, so the view can display the whole conversation:
+I wrap it in a try/catch because `sendMessage` throws on API failure. The assistant reply is created **inside** the `try`, so it's only stored when the call actually succeeds.
+
+---
+
+## 9. Auto-generate a title (after the first reply)
+
+I want a short title generated **once**, on the first exchange. I detect "first exchange" by checking the conversation has no title yet:
 
 ```php
-return Inertia::render('Ask/Index', [
-    'models'        => $this->askService->getModels(),
-    'selectedModel' => $validated['model'],
-    'conversation'  => $conversation,
-    'messages'      => $conversation->messages()->orderBy('created_at')->get(),
-    'error'         => $error,
-]);
-```
-
-## modify the vue to work with the new controller
-here is the view i modified to suit with the new proprs that are sent by the controller
-see `feat: refactor index.vue to see every changements`
-```html
-<script setup>
-import { Head, useForm } from '@inertiajs/vue3'
-import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-
-const props = defineProps({
-    models: Array,
-    selectedModel: String,
-    conversation: Object,
-    messages: Array,
-    error: String,
-})
-
-const form = useForm({
-    message: "",
-    model: props.selectedModel,
-    conversation_id: props.conversation?.id ?? null,
-})
-
-const submit = () => {
-    form.post('/ask', {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset('message')
-            form.conversation_id = props.conversation?.id ?? null
-        },
-    })
+if ($conversation->title === null) {
+    $conv_title = $this->askService->sendMessage(
+        messages: $formated_history,
+        model: $validated['model'],
+        system_prompt_file: 'prompts.generate_title',
+    );
+    $conversation->update(['title' => trim($conv_title)]);
 }
-</script>
-<template>
-
-    <Head title="Poser une question" />
-
-    <div class="min-h-screen bg-neutral-950 text-neutral-100">
-        <div class="mx-auto max-w-3xl space-y-6 px-4 py-10">
-            <h1 class="text-2xl font-bold">Poser une question</h1>
-
-            <!-- Formulaire -->
-            <div class="space-y-4">
-                <!-- Sélecteur de modèle -->
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Modèle</label>
-                    <select v-model="form.model" class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2">
-                        <option v-for="model in props.models" :key="model.id" :value="model.id">
-                            {{ model.name }}
-                        </option>
-                    </select>
-                </div>
-                <div v-for="message in props.messages" :key="message.id" :class="message.role === 'user'
-                    ? 'ml-auto max-w-[80%] rounded-xl bg-blue-600/20 border border-blue-800/40 p-4'
-                    : 'mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4'">
-                    <MarkdownRenderer :content="message.content" />
-                </div>
-
-                <!-- Champ question -->
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Votre question</label>
-                    <textarea v-model="form.message" rows="4"
-                        class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2"
-                        placeholder="Posez votre question..." />
-                    <p v-if="form.errors.message" class="mt-1 text-sm text-red-500">
-                        {{ form.errors.message }}
-                    </p>
-                </div>
-
-                <!-- Bouton -->
-                <button @click="submit" :disabled="form.processing"
-                    class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:opacity-50">
-                    {{ form.processing ? 'Envoi...' : 'Envoyer' }}
-                </button>
-            </div>
-
-            <!-- Erreur API -->
-            <div v-if="props.error" class="rounded-md bg-red-950/30 p-4 text-red-400">
-                Erreur : {{ props.error }}
-            </div>
-        </div>
-    </div>
-</template>
 ```
-## handle reload destory and history conversation
-In the `routes/web.php`
-we need to add the routes in the middleware('auth')->group because we want the user to be connected.    
-but it has to change with the conversationid
+
+Key points:
+
+- I use an `if`, not a ternary, because I'm triggering an **action** (the `update`) only when the title is null — not just choosing a value. With an `if`, an already-titled conversation makes neither an API call nor a database write.
+- `system_prompt_file: 'prompts.generate_title'` swaps the system prompt for one that asks for a short title (that's the extra parameter I added to `sendMessage`).
+- `trim()` removes the whitespace/newlines models sometimes add around the title.
+
+This block goes inside the `try`, right after the assistant message is stored.
+
+---
+
+## 10. Handle reload: redirect instead of render
+
+**The problem:** so far, `ask` ended with `Inertia::render(...)`, which keeps the URL on `/ask`. On reload, the browser re-requests `/ask`, which knows about no conversation — so everything is lost.
+
+**The fix** is the Post/Redirect/Get pattern: the POST action redirects to a GET route that carries the conversation id in the URL.
+
+### New route (with a parameter)
+
+In `routes/web.php`, inside the `auth` group (the user must be logged in):
+
 ```php
-    Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
+use App\Http\Controllers\ConversationController;
+
+Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])
+    ->name('conversations.show');
 ```
 
-## fill the conversations controller
-i added this with the previous route i created
+I named the parameter `{conversation}` (matching the model name) so Laravel's **route model binding** resolves it to a `Conversation` object automatically.
+
+### The ConversationController
+
 ```php
 <?php
 
@@ -619,15 +542,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Services\SimpleAskService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ConversationController extends Controller
 {
-    public function show(Conversation $conversation, SimpleAskService $simpleAskService)
+    public function show(Request $request, Conversation $conversation, SimpleAskService $askService)
     {
-        abort_unless($conversation->user_id === auth()->id(), 403);
+        abort_unless($conversation->user_id === $request->user()->id, 403);
+
         return Inertia::render('Ask/Index', [
-            'models'        => $simpleAskService->getModels(),
+            'models'        => $askService->getModels(),
             'selectedModel' => $conversation->favorite_ia,
             'conversation'  => $conversation,
             'messages'      => $conversation->messages()->orderBy('created_at')->get(),
@@ -636,60 +561,112 @@ class ConversationController extends Controller
 }
 ```
 
-I also edited the AskController in order to redirect to the new route
+Notes:
 
-## conversatoins list
-i chose to make a global share to avoid repeating in each controller
-in `app/Http/Middleware/HandleInertiaRequests.php`
-i added in the share array this : 
+- Route model binding loads the conversation from the URL id, but it does **not** check ownership. So I add `abort_unless(...)` to return 403 if the conversation isn't mine. (A Policy would be cleaner, but this is enough for now.)
+- `selectedModel` comes from `$conversation->favorite_ia` here — reopening an old conversation preselects the model it was using.
+- I inject `SimpleAskService` as a method parameter (this controller has no constructor injection).
+
+### Make `ask` redirect
+
+The last line of `AskController@ask` becomes:
+
 ```php
-            'conversations' => fn() => $request->user()->conversations()->orderBy('updated_at', 'desc')->get(),
+return redirect()->route('conversations.show', $conversation->id);
 ```
 
-we can now access in vue it with 
-```vue
-import { usePage } from '@inertiajs/vue3'
+Now sending a message lands on `/conversations/{id}`. On reload, `show` runs again and reloads everything from the database. Bonus: the display logic now lives only in `show`, so no duplicated `return`.
 
+> **Render vs redirect:** `Inertia::render()` picks *what to display* but leaves the URL unchanged. `redirect()->route()` changes the URL and triggers a new GET request. The reload problem is fixed by redirecting, because reloading a GET page is safe and re-fetches the data.
+
+---
+
+## 11. List the conversations (sidebar)
+
+I want the conversation list available on every chat page. Instead of passing it from each controller, I share it **globally** through the Inertia middleware.
+
+In `app/Http/Middleware/HandleInertiaRequests.php`, inside the `share()` array:
+
+```php
+'conversations' => fn () => $request->user()
+    ? $request->user()->conversations()->orderBy('updated_at', 'desc')->get()
+    : [],
+```
+
+Things to note here:
+
+- I guard against a missing user (`$request->user() ? ... : []`). `share()` runs on **every** page, including login/home where nobody is authenticated — calling `->conversations()` on `null` would crash.
+- I wrap the value in a closure (`fn () => ...`) so the query only runs when the page actually needs it (an Inertia optimization).
+- Sorting by `updated_at desc` puts the freshest conversation on top (newest first).
+
+Globally shared data does **not** arrive in `defineProps`. I read it via `usePage()`:
+
+```js
+import { usePage, Link } from '@inertiajs/vue3'
 const page = usePage()
-// puis tu accèdes à page.props.conversations
+// page.props.conversations
 ```
 
-so i added this the index.Vue
-```Vue
-        <Link v-for="conv in page.props.conversations" :key="conv.id" :href="`/conversations/${conv.id}`">{{
-            conv.title ?? "default" }}</Link>
-```
+The sidebar itself:
 
-The link come from inertia and able to change page without reloading everything
-the key argument allow to update the list dynamically
-
-## loader
-in the index.Vue we have form processing wich change state when we click on button so we can look after it
 ```html
-                    <div v-if="form.processing"
-                        class="mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4">
-                        <span class="flex gap-1.5">
-                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"></span>
-                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"
-                                style="animation-delay: 0.15s"></span>
-                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"
-                                style="animation-delay: 0.3s"></span>
-                        </span>
-                    </div>
+<Link v-for="conv in page.props.conversations" :key="conv.id"
+      :href="`/conversations/${conv.id}`">
+    {{ conv.title ?? 'Nouvelle conversation' }}
+</Link>
 ```
+
+What I learned building this:
+
+- **`<Link>` vs `<a>`:** `<Link>` (from Inertia) navigates without a full page reload. It fetches only the new page's data (JSON props), keeps the Vue app alive, and updates the URL. A plain `<a>` would reload all the HTML/JS/CSS and restart the whole app — much slower. `<Link>` is only for internal navigation; external links still use `<a>`.
+- **`:href` (with the colon) vs `href`:** the colon tells Vue to evaluate the value as JavaScript. Without it, the URL would be the literal text `` `/conversations/${conv.id}` ``. The backticks make it a template literal so `${conv.id}` is interpolated.
+- **`:key="conv.id"`:** the key must be unique and stable per item. Vue uses it to track which DOM element matches which list item when the list changes (add/remove/reorder). Without a stable key, Vue guesses by position, which is slow and causes visual bugs. The conversation's `id` is perfect — unique and never changing. Use `conv.id` (the loop variable), not a global like `page.props.conversations.id`.
+- **`?? 'Nouvelle conversation'`** handles conversations whose title hasn't been generated yet.
+
+I wrapped the sidebar and the chat in a horizontal flex container so the sidebar sits on the left and the chat fills the rest:
+
+```html
+<div class="flex min-h-screen ...">
+    <aside class="w-64 ...">  <!-- sidebar --> </aside>
+    <main class="flex-1 ...">  <!-- chat --> </main>
+</div>
+```
+
+> **Gotcha I hit:** a `flex` container only affects its **direct children**. If you self-close it (`<div class="flex ..."></div>`), the sidebar and chat end up *after* it, not inside it, and nothing lays out side by side. Both columns must be nested inside the flex div.
+
+---
+
+## 12. Loading indicator
+
+`useForm` exposes `form.processing`, which Inertia flips to `true` during the request and back to `false` when it finishes. I already use it on the button (`Envoi...`). I reuse it to show a "typing" bubble after the message list:
+
+```html
+<div v-if="form.processing"
+     class="mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4">
+    <span class="flex gap-1.5">
+        <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"></span>
+        <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500" style="animation-delay: 0.15s"></span>
+        <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500" style="animation-delay: 0.3s"></span>
+    </span>
+</div>
+```
+
+The `animation-delay` on each dot creates a wave effect. I place it after the messages loop, since that's where the reply will appear.
+
+---
 
 ## Misc
 
-### Change a database table
-
-To create a new migration:
+### Create a new migration
 
 ```bash
 php artisan make:migration add_favorite_ia_to_users_table --table=users
 ```
 
-To roll back the last migration:
+### Roll back the last migration
 
 ```bash
 php artisan migrate:rollback
 ```
+
+---
