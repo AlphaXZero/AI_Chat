@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Message extends Model
 {
     protected $fillable = ['conversation_id', 'role', 'content'];
-
+protected $touches = ['conversation'];
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);

@@ -634,6 +634,14 @@ I wrapped the sidebar and the chat in a horizontal flex container so the sidebar
 
 > **Gotcha I hit:** a `flex` container only affects its **direct children**. If you self-close it (`<div class="flex ..."></div>`), the sidebar and chat end up *after* it, not inside it, and nothing lays out side by side. Both columns must be nested inside the flex div.
 
+I sorted the list conversation by their last activity when i enter something in a conversation, tthe conversation itself is not modified, only the message to update the conversation when a message is entered, i had to modify the Message model to touches the conversation when a message is created.
+```php
+class Message extends Model
+{
+    ...
+    protected $touches = ['conversation'];
+```
+
 ---
 
 ## 12. Loading indicator
