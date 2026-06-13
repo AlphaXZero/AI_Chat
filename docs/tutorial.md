@@ -677,4 +677,8 @@ php artisan make:migration add_favorite_ia_to_users_table --table=users
 php artisan migrate:rollback
 ```
 
----
+### Voir les routes
+```php
+php artisan route:list
+```
+x---

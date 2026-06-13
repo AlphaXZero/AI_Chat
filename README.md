@@ -9,6 +9,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] avoid scrolling history while scrolling
 - [ ] scroll to bottom when new message is received or when the user open a old conversation
+- [ ]  update favorite ia with @change on select
 - [ ] show the user message before response instead of user message and chat response simultanusly
 - [ ] enter key to chat
 - [ ] multiple systems prompts

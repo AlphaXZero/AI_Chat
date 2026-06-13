@@ -5,6 +5,14 @@ class User {
   email: string
   password: string
   favorite_ia: string
+  shortcut: json
+  ' Structure du shortcut (tableau d'objets) :
+  ' [{ "shortcut": "hi", "command": "hello " }, ...]
+}
+class AiSettings {
+  id: int
+  setting: string
+  value: string
 }
 class Conversation {
   id: int
@@ -25,6 +33,7 @@ class Image {
   placeholder: string
 }
 User "1" -- "0..*" Conversation : has >
+User "1" -- "0..*" Ai_Settings : is configured >
 Conversation "1" -- "1..*" Message : is made of >
-Message "1" -- "0..*" Image : has >
+Message "1" -- "0..*" Image : contains >
 @enduml
