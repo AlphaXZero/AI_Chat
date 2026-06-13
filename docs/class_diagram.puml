@@ -9,7 +9,7 @@ class User {
   ' Structure du shortcut (tableau d'objets) :
   ' [{ "shortcut": "hi", "command": "hello " }, ...]
 }
-class AiSettings {
+class AiSetting {
   id: int
   setting: string
   value: string
