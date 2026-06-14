@@ -815,7 +815,26 @@ to retrieve them in Aisettings modal we need to send them from index when we ope
         @close="showSettings = false" />
 ```
 ### how to use settings in prompts system
+we have already a system prompt in simpleaskservice so we need to update it to use our settings
 
+```php
+    private function getSystemPrompt(string $system_prompt_file): array
+    {
+        $user = auth()->user()?->name ?? 'l\'utilisateur';
+        $now = now()->locale('fr')->format('l d F Y H:i');
+        $profile = $user?->aiSettings->pluck('value', 'setting') ?? collect();
+        return [
+            'role' => 'system',
+            'content' => view($system_prompt_file, [
+                'now' => $now,
+                'user' => $user,
+                'profile' => $profile,
+            ])->render(),
+        ];
+    }
+```
+
+we can now use them in systemprompt
 
 
 ## Misc
