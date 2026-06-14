@@ -8,6 +8,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] make seeder and factory
+- [ ] update homepage
 - [ ] ceck vue
 - [ ] add conversatoin delete
 - [ ] avoid scrolling history while scrolling

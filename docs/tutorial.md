@@ -739,9 +739,91 @@ import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
 ```
  Now that we have the db and the view(normally i do it after), we can do the model
 
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AiSetting extends Model
+{
+    protected $fillable = ['setting', 'value', 'user_id'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+```
+and we update the  app/Models/User.php
+we add `command` in the fillable and a hasmany for ai_settings
+
+
+### aisettings controller
+we create
+```bash
+php artisan make:controller AiSettignsController
+```
+
+we add the route in routes/web.php
+see in misc to know how route works
+Now that we send the array to the controller with form.patch(/settings/ai)
+
+we validate the request received:
+```php
+    public function update(Request $request)
+    {
+        dd($request->all());
+        $validated = $request->validate([
+            'profile'                 => 'array',
+            'shortcuts'               => 'array',
+            'shortcuts.*.command'     => 'nullable|string',
+            'shortcuts.*.instruction' => 'nullable|string',
+        ]);
+    }
+```
+`shortcuts.*.command` take every command
+to update the user table with command:
+```php
+$request->user()->update(['shortcut' => $request['shortcuts']]);
+```
+for the settings its more complicated, we need to iterate in the array put the key in table with its value if the value is not the same
+```php
+        foreach ($validated['profile'] as $setting => $value) {
+            $request->user()->aiSettings()->updateOrCreate(
+                ['setting' => $setting],
+                ['value' => $value]
+            );
+        }
+        return back();
+```
+the `return back()` send the user back to the page he was before opening the settings ai
+
+
+Now that the controlers send the infos entered in the db, it would be cool if when we open the settings it fill it whit the data we have in db
+so i added them in the /Http/HandleInertiaRequest in the share to share within every page in the app
+```php
+'aiProfile' => fn () => $request->user()
+    ? $request->user()->aiSettings->pluck('value', 'setting')
+    : (object) [],
+'shortcuts' => fn () => $request->user()?->shortcut ?? [],
+```
+to retrieve them in Aisettings modal we need to send them from index when we open the modal
+```html
+    <AiSettingsModal :open="showSettings" :profile="page.props.aiProfile" :shortcuts="page.props.shortcuts"
+        @close="showSettings = false" />
+```
+### how to use settings in prompts system
+
 
 
 ## Misc
+
+### IMPORTANT how the mvc work
+here i want to save the settings chosen by the user in the db
+
+the view send a http request when i do `form.patch('/settings/ai')` because in routes/web.php i added `Route::patch('/settings/ai', [AiSettingsController::class, 'update'])->name('settings.ai.update');`, this route says when this request (when the page /settings/ai send patch) occurs, call update from AiSettingsController; then the function in the controller works now and the method can save in db or resend http request with inertia:render 
 
 ### Create a new migration
 

@@ -41,8 +41,12 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'conversations' => fn() => $request->user() ? $request->user()->conversations()->orderBy('updated_at', 'desc')->get() : [],
+            'aiProfile' => fn() => $request->user()
+                ? $request->user()->aiSettings->pluck('value', 'setting')
+                : (object) [],
+            'shortcuts' => fn() => $request->user()?->shortcut ?? [],
         ];
     }
 }

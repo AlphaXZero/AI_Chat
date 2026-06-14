@@ -28,8 +28,7 @@ const removeShortcut = (index) => {
 }
 
 const save = () => {
-    // TODO: brancher sur ta route, ex:
-    // form.patch('/settings/ai', { onSuccess: () => emit('close') })
+    form.patch('/settings/ai', { onSuccess: () => emit('close') })
 }
 </script>
 

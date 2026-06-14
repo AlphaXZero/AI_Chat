@@ -114,5 +114,6 @@ const submit = () => {
         class="mt-auto rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
         ⚙️ Instructions personnalisées
     </button>
-    <AiSettingsModal :open="showSettings" @close="showSettings = false" />
+    <AiSettingsModal :open="showSettings" :profile="page.props.aiProfile" :shortcuts="page.props.shortcuts"
+        @close="showSettings = false" />
 </template>
