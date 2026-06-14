@@ -9,7 +9,9 @@ use App\Models\Conversation;
 
 class AskController extends Controller
 {
-    public function __construct(private SimpleAskService $askService) {}
+    public function __construct(private SimpleAskService $askService)
+    {
+    }
 
     public function index()
     {
@@ -28,14 +30,22 @@ class AskController extends Controller
             'model' => 'required|string',
             'conversation_id' => 'nullable|exists:conversations,id',
         ]);
+        $message = $validated['message'];
+        foreach ($request->user()->shortcut ?? [] as $shortcut) {
+            $trigger = '/' . $shortcut['command'];
+            if (str_starts_with($message, $trigger)) {
+                $message = $shortcut['instruction'] . substr($message, strlen($trigger));
+                break;
+            }
+        }
 
-        $conversation = ! empty($validated['conversation_id']) ?
-            $request->user()->conversations()->findOrFail($validated['conversation_id'])     :
+        $conversation = !empty($validated['conversation_id']) ?
+            $request->user()->conversations()->findOrFail($validated['conversation_id']) :
             $request->user()->conversations()->create(["title" => null, "favorite_ia" => $validated['model']]);
 
         $conversation->messages()->create([
             'role' => "user",
-            "content" => $validated["message"],
+            "content" => $message,
         ]);
         $history = $conversation->messages()->orderBy('created_at')->get();
         $formated_history = $history->map(fn($message) => ['role' => $message->role, 'content' => $message->content])->toArray();
@@ -51,7 +61,7 @@ class AskController extends Controller
             ]);
             if ($conversation->title === null) {
                 $conv_title = $this->askService->sendMessage(
-                    messages:[...$formated_history, ['role' => 'assistant', 'content' => $response]],
+                    messages: [...$formated_history, ['role' => 'assistant', 'content' => $response]],
                     model: $validated['model'],
                     system_prompt_file: "prompts.generate_title",
                 );
