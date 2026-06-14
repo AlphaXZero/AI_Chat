@@ -1,8 +1,10 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-import { usePage, Link } from '@inertiajs/vue3'
+import { usePage, Link, Head, useForm } from '@inertiajs/vue3'
+import { ref } from 'vue'
+import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
 
+const showSettings = ref(false)
 const page = usePage()
 const props = defineProps({
     models: Array,
@@ -108,4 +110,9 @@ const submit = () => {
             </div>
         </main>
     </div>
+    <button @click="showSettings = true"
+        class="mt-auto rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
+        ⚙️ Instructions personnalisées
+    </button>
+    <AiSettingsModal :open="showSettings" @close="showSettings = false" />
 </template>
