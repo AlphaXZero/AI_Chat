@@ -7,6 +7,9 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] make seeder and factory
+- [ ] ceck vue
+- [ ] add conversatoin delete
 - [ ] avoid scrolling history while scrolling
 - [ ] scroll to bottom when new message is received or when the user open a old conversation
 - [ ]  update favorite ia with @change on select

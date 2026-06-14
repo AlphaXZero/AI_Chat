@@ -359,6 +359,7 @@ public function down(): void
     });
 }
 ```
+`$table->timestamp()` is mandatory in order to make the eloquent model work properly
 
 For the `messages` migration, I make the foreign key cascade on delete, so deleting a conversation also deletes its messages (no orphan rows):
 
@@ -663,12 +664,99 @@ The `animation-delay` on each dot creates a wave effect. I place it after the me
 
 ---
 
+## 13. preference settings
+first i made some migrations to add command to user and a table with settings
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->json('shortcut')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('shortcut');
+        });
+    }
+};
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('ai_settings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('setting');
+            $table->string('value')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('ai_settings');
+    }
+};
+
+```
+then i let claude make the viewin /ressources/pages/Ask/AiSettingsModal.vue
+and i added this in Index.vue
+```php
+import { ref } from 'vue'
+import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
+    <button @click="showSettings = true"
+        class="mt-auto rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
+        ⚙️ Instructions personnalisées
+    </button>
+    <AiSettingsModal :open="showSettings" @close="showSettings = false" />
+```
+ Now that we have the db and the view(normally i do it after), we can do the model
+
+
+
 ## Misc
 
 ### Create a new migration
 
 ```bash
 php artisan make:migration add_favorite_ia_to_users_table --table=users
+```
+
+### Make fresh migration 
+```bash
+php artisan migrate:fresh
+```
+
+### Seed db
+```bash
+php artisan db:seed
 ```
 
 ### Roll back the last migration
