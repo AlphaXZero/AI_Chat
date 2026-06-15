@@ -17,5 +17,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::patch('/settings/ai', [AiSettingsController::class, 'update'])->name('settings.ai.update');
 });
+Route::get('/ask-stream', [\App\Http\Controllers\AskStreamController::class, 'index'])
+    ->name('stream.index');
 
+Route::post('/ask-stream', [\App\Http\Controllers\AskStreamController::class, 'stream'])
+    ->name('stream.post');
 require __DIR__ . '/settings.php';
