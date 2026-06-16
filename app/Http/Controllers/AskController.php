@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Conversation;
 use App\Services\SimpleAskService;
+use App\Services\SimpleAskStreamService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Conversation;
-use App\Services\SimpleAskStreamService;
 
 class AskController extends Controller
 {
-    public function __construct(private SimpleAskService $askService, private SimpleAskStreamService $streamService)
-    {
-    }
+    public function __construct(
+        private SimpleAskService $askService,
+        private SimpleAskStreamService $streamService,
+    ) {}
 
     public function index()
     {
@@ -24,13 +25,13 @@ class AskController extends Controller
 
     public function ask(Request $request)
     {
-        $response = null;
-        $error = null;
         $validated = $request->validate([
             'message' => 'required|string',
             'model' => 'required|string',
             'conversation_id' => 'nullable|exists:conversations,id',
         ]);
+
+        // Remplace un éventuel raccourci (/command) par son instruction
         $message = $validated['message'];
         foreach ($request->user()->shortcut ?? [] as $shortcut) {
             $trigger = '/' . $shortcut['command'];
@@ -40,28 +41,49 @@ class AskController extends Controller
             }
         }
 
-        $conversation = !empty($validated['conversation_id']) ?
-            $request->user()->conversations()->findOrFail($validated['conversation_id']) :
-            $request->user()->conversations()->create(["title" => null, "favorite_ia" => $validated['model']]);
+        // Récupère la conversation existante ou en crée une nouvelle
+        $conversation = !empty($validated['conversation_id'])
+            ? $request->user()->conversations()->findOrFail($validated['conversation_id'])
+            : $request->user()->conversations()->create([
+                'title' => null,
+                'favorite_ia' => $validated['model'],
+            ]);
 
+        // Mémorise le modèle choisi sur l'utilisateur
+        $request->user()->update(['favorite_ia' => $validated['model']]);
+
+        // Stocke le message de l'utilisateur
         $conversation->messages()->create([
-            'role' => "user",
-            "content" => $message,
+            'role' => 'user',
+            'content' => $message,
         ]);
-        $history = $conversation->messages()->orderBy('created_at')->get();
-        $formated_history = $history->map(fn($message) => ['role' => $message->role, 'content' => $message->content])->toArray();
+
+        // Construit l'historique pour l'API
+        $formated_history = $conversation->messages()
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn($m) => ['role' => $m->role, 'content' => $m->content])
+            ->toArray();
+
         return response()->stream(
             function () use ($formated_history, $validated, $conversation) {
+                // Continue le traitement même si le client ferme la connexion
+                // (sinon la génération du titre ci-dessous serait interrompue)
+                ignore_user_abort(true);
+
+                // Stream la réponse en direct et récupère le texte complet
                 $fullResponse = $this->streamService->streamToOutput(
                     messages: $formated_history,
                     model: $validated['model'],
                 );
 
+                // Stocke la réponse de l'assistant
                 $conversation->messages()->create([
                     'role' => 'assistant',
                     'content' => $fullResponse,
                 ]);
 
+                // Génère le titre au premier échange
                 if ($conversation->title === null) {
                     $title = $this->askService->sendMessage(
                         messages: [...$formated_history, ['role' => 'assistant', 'content' => $fullResponse]],
@@ -78,6 +100,5 @@ class AskController extends Controller
                 'X-Conversation-Id' => $conversation->id,
             ]
         );
-
     }
 }

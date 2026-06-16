@@ -53,24 +53,7 @@ class SimpleAskStreamService
         });
     }
 
-    /**
-     * Récupère la liste légère des modèles.
-     */
-    public function getModelsLight(): array
-    {
-        return collect($this->getModels())
-            ->map(fn(array $m): array => ['id' => $m['id'], 'name' => $m['name']])
-            ->values()
-            ->toArray();
-    }
 
-    /**
-     * Récupère les détails d'un modèle.
-     */
-    public function getModelDetails(string $id): ?array
-    {
-        return collect($this->getModels())->firstWhere('id', $id);
-    }
 
     /**
      * Stream un message en temps réel vers la sortie.
@@ -238,11 +221,15 @@ class SimpleAskStreamService
      */
     private function getSystemPrompt(): array
     {
+        $user = auth()->user();
+        $profile = $user?->aiSettings->pluck('value', 'setting') ?? collect();
+
         return [
             'role' => 'system',
             'content' => view('prompts.system', [
                 'now' => now()->locale('fr')->format('l d F Y H:i'),
-                'user' => auth()->user()?->name ?? 'l\'utilisateur',
+                'user' => $user?->name ?? 'l\'utilisateur',
+                'profile' => $profile,
             ])->render(),
         ];
     }
