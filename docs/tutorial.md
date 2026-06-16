@@ -872,6 +872,9 @@ i added this in the controller, which detect if a / is in the user message and r
         }
 ```
 
+## Streaming
+we can't use inertia::render anymore
+
 ## Misc
 
 ### IMPORTANT how the mvc work

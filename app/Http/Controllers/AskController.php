@@ -6,10 +6,11 @@ use App\Services\SimpleAskService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Conversation;
+use App\Services\SimpleAskStreamService;
 
 class AskController extends Controller
 {
-    public function __construct(private SimpleAskService $askService)
+    public function __construct(private SimpleAskService $askService, private SimpleAskStreamService $streamService)
     {
     }
 
@@ -49,30 +50,34 @@ class AskController extends Controller
         ]);
         $history = $conversation->messages()->orderBy('created_at')->get();
         $formated_history = $history->map(fn($message) => ['role' => $message->role, 'content' => $message->content])->toArray();
-        try {
-            $response = $this->askService->sendMessage(
-                messages: $formated_history,
-                model: $validated['model']
-            );
-
-            $conversation->messages()->create([
-                'role' => "assistant",
-                'content' => $response,
-            ]);
-            if ($conversation->title === null) {
-                $conv_title = $this->askService->sendMessage(
-                    messages: [...$formated_history, ['role' => 'assistant', 'content' => $response]],
+        return response()->stream(
+            function () use ($formated_history, $validated, $conversation) {
+                $fullResponse = $this->streamService->streamToOutput(
+                    messages: $formated_history,
                     model: $validated['model'],
-                    system_prompt_file: "prompts.generate_title",
                 );
-                $conversation->update(['title' => trim($conv_title)]);
-            }
-        } catch (\Exception $e) {
-            $error = $e->getMessage();
-        }
 
-        return redirect()
-            ->route('conversations.show', $conversation->id)
-            ->with('error', $error);
+                $conversation->messages()->create([
+                    'role' => 'assistant',
+                    'content' => $fullResponse,
+                ]);
+
+                if ($conversation->title === null) {
+                    $title = $this->askService->sendMessage(
+                        messages: [...$formated_history, ['role' => 'assistant', 'content' => $fullResponse]],
+                        model: $validated['model'],
+                        system_prompt_file: 'prompts.generate_title',
+                    );
+                    $conversation->update(['title' => trim($title)]);
+                }
+            },
+            headers: [
+                'Content-Type' => 'text/plain; charset=utf-8',
+                'Cache-Control' => 'no-cache, no-store',
+                'X-Accel-Buffering' => 'no',
+                'X-Conversation-Id' => $conversation->id,
+            ]
+        );
+
     }
 }

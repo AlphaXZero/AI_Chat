@@ -81,33 +81,38 @@ class SimpleAskStreamService
         ?string $model = null,
         float $temperature = 1.0,
         ?string $reasoningEffort = null
-    ): void {
+    ): string {
+        $fullContent = '';   // ← accumulateur
+
         $response = $this->sendStreamRequest($messages, $model, $temperature, $reasoningEffort);
 
         if ($response->failed()) {
             echo "[ERROR] " . $response->json('error.message', 'HTTP Error');
             $this->flush();
-            return;
+            return $fullContent;   // ← retourne (vide ici)
         }
 
         foreach ($this->parseSSEStream($response->toPsrResponse()->getBody()) as $event) {
             if ($event['type'] === 'error') {
                 echo "[ERROR] " . $event['data'];
                 $this->flush();
-                return;
+                return $fullContent;
             }
 
             if ($event['type'] === 'content' && $event['data']) {
                 echo $event['data'];
+                $fullContent .= $event['data'];   // ← on accumule le vrai contenu
                 $this->flush();
             }
 
-            // Pour le reasoning, on utilise un préfixe spécial
             if ($event['type'] === 'reasoning' && $event['data']) {
                 echo "[REASONING]" . $event['data'] . "[/REASONING]";
                 $this->flush();
+                // on n'accumule PAS le reasoning dans $fullContent (on ne le stocke pas en base)
             }
         }
+
+        return $fullContent;   // ← le texte complet, pour le stocker
     }
 
     /**
