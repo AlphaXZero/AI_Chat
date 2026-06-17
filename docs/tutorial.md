@@ -873,7 +873,27 @@ i added this in the controller, which detect if a / is in the user message and r
 ```
 
 ## Streaming
-we can't use inertia::render anymore
+it was very boring, check the git, i mainly used claude to achieve making working it (:
+
+## Completing the do-list
+now that the main project is working properly i will do a lot of qol ideas i added in my README.md
+
+### navbar
+actually i have the default starter kit navbar.
+The default navbar is in `ressources/js/app.ts`
+```php
+layout: (name) => {
+    switch (true) {
+        case name === 'Welcome':           return null;        // pas de layout
+        case name.startsWith('auth/'):     return AuthLayout;
+        case name.startsWith('settings/'): return [AppLayout, SettingsLayout];
+        default:                           return AppLayout;    // ← TES pages tombent ici
+    }
+}
+```
+we need to change the default since our pagename is ask.index it wont fit anything 
+
+
 
 ## Misc
 

@@ -8,6 +8,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] make seeder and factory
+- [ ] merge services
 - [ ] update homepage
 - [ ] ceck vue
 - [ ] add conversatoin delete
@@ -26,7 +27,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 - [ ] navbar history
 - [ ] typerarea below questions
 - [ ] Update simpleaskservice (favorite ia) ?
-- [ ] check route in routes/web.php
+- [x] check route in routes/web.php
 - [ ] look further js/components/MarkdownRenderer.vue
 - [ ] fix warning simpleaskservice
 - [ ] look further the contoler

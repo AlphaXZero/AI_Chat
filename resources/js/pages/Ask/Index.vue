@@ -5,7 +5,6 @@ import { ref, computed } from 'vue'
 import { useStream } from '@laravel/stream-vue'
 import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
 
-const showSettings = ref(false)
 const page = usePage()
 const props = defineProps({
     models: Array,
@@ -15,11 +14,13 @@ const props = defineProps({
     error: String,
 })
 
+const showSettings = ref(false)
+
 // champ de saisie + modèle sélectionné
 const message = ref('')
 const model = ref(props.selectedModel)
 
-// le message que l'utilisateur vient d'envoyer (affiché immédiatement)
+// message en cours d'envoi (affiché immédiatement, avant le rechargement)
 const pendingUserMessage = ref('')
 
 // id de conversation renvoyé par le serveur via le header X-Conversation-Id
@@ -27,7 +28,6 @@ const newConversationId = ref(null)
 
 const { data, isStreaming, isFetching, send } = useStream('/ask', {
     onResponse: (response) => {
-        // récupère l'id de la conversation depuis le header de la réponse
         const id = response.headers.get('X-Conversation-Id')
         if (id) newConversationId.value = id
     },
@@ -37,11 +37,11 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
         pendingUserMessage.value = ''
 
         if (props.conversation?.id) {
-            // déjà sur une conversation : on recharge pour récupérer le message stocké + titre
             router.reload()
         } else if (targetId) {
-            // nouvelle conversation : on va sur sa page dédiée
-            router.visit(`/conversations/${targetId}`)
+            router.visit(`/conversations/${targetId}`), {
+                only: ['conversation', 'messages', 'conversations'],
+            }
         } else {
             router.reload()
         }
@@ -62,12 +62,16 @@ const submit = () => {
     if (!message.value.trim()) return
     pendingUserMessage.value = message.value
     const toSend = message.value
-    message.value = ''   // vide le champ tout de suite
+    message.value = ''
     send({
         message: toSend,
         model: model.value,
         conversation_id: props.conversation?.id ?? null,
     })
+}
+
+const logout = () => {
+    router.post('/logout')
 }
 </script>
 
@@ -75,29 +79,46 @@ const submit = () => {
 
     <Head title="Poser une question" />
 
-    <div class="flex min-h-screen bg-neutral-950 text-neutral-100">
-        <!-- Sidebar -->
-        <aside class="flex w-64 flex-col gap-1 border-r border-neutral-800 bg-neutral-900 p-3 overflow-y-auto">
-            <Link href="/ask"
-                class="mb-3 rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-700">
-                + Nouvelle conversation
-            </Link>
+    <!-- height: 100vh garanti en inline pour borner la hauteur (indispensable au scroll interne) -->
+    <div class="flex overflow-hidden bg-neutral-950 text-neutral-100" style="height: 100vh">
+        <!-- Sidebar : titre fixe / conversations scrollables / actions fixes -->
+        <aside class="flex w-64 flex-col border-r border-neutral-800 bg-neutral-900">
+            <!-- Haut : titre / branding (fixe) -->
+            <div class="shrink-0 border-b border-neutral-800 p-4">
+                <h2 class="text-lg font-bold">💬 Mon Chat</h2>
+            </div>
 
-            <Link v-for="conv in page.props.conversations" :key="conv.id" :href="`/conversations/${conv.id}`"
-                class="truncate rounded-lg px-3 py-2 text-sm text-neutral-300 transition hover:bg-neutral-800"
-                :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
-                {{ conv.title ?? "Nouvelle conversation" }}
-            </Link>
+            <!-- Milieu : liste des conversations (scrolle) -->
+            <div class="min-h-0 flex-1 overflow-y-auto p-3">
+                <Link href="/ask"
+                    class="mb-2 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-700">
+                    + Nouvelle conversation
+                </Link>
 
-            <!-- Bouton réglages en bas de la sidebar -->
-            <button @click="showSettings = true"
-                class="mt-auto rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
-                ⚙️ Instructions personnalisées
-            </button>
+                <div class="flex flex-col gap-1">
+                    <Link v-for="conv in page.props.conversations" :key="conv.id" :href="`/conversations/${conv.id}`"
+                        class="truncate rounded-lg px-3 py-2 text-sm text-neutral-300 transition hover:bg-neutral-800"
+                        :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
+                        {{ conv.title ?? "Nouvelle conversation" }}
+                    </Link>
+                </div>
+            </div>
+
+            <!-- Bas : réglages + déconnexion (fixe) -->
+            <div class="shrink-0 flex flex-col gap-1 border-t border-neutral-800 p-3">
+                <button @click="showSettings = true"
+                    class="rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
+                    ⚙️ Instructions personnalisées
+                </button>
+                <button @click="logout"
+                    class="rounded-lg px-3 py-2 text-left text-sm text-neutral-400 transition hover:bg-neutral-800 hover:text-red-400">
+                    Déconnexion
+                </button>
+            </div>
         </aside>
 
-        <!-- Contenu principal -->
-        <main class="flex-1 overflow-y-auto">
+        <!-- Contenu principal (scrolle indépendamment) -->
+        <main class="min-h-0 flex-1 overflow-y-auto">
             <div class="mx-auto max-w-3xl space-y-6 px-4 py-10">
                 <h1 class="text-2xl font-bold">Poser une question</h1>
 
@@ -119,15 +140,15 @@ const submit = () => {
                         <MarkdownRenderer :content="msg.content" />
                     </div>
 
-                    <!-- Message user en cours d'envoi (affiché immédiatement) -->
+                    <!-- Message user en cours d'envoi -->
                     <div v-if="pendingUserMessage"
-                        class="ml-auto max-w-[80%] rounded-xl bg-blue-600/20 border border-blue-800/40 p-4">
+                        class="ml-auto max-w-[80%] rounded-xl border border-blue-800/40 bg-blue-600/20 p-4">
                         <MarkdownRenderer :content="pendingUserMessage" />
                     </div>
 
-                    <!-- Réponse en cours de streaming (SEULEMENT pendant le stream actif) -->
+                    <!-- Réponse en cours de streaming -->
                     <div v-if="isStreaming || isFetching"
-                        class="mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4">
+                        class="mr-auto max-w-[80%] rounded-xl border border-neutral-700 bg-neutral-900 p-4">
                         <MarkdownRenderer v-if="streamingContent" :content="streamingContent" />
                         <span v-else class="flex gap-1.5">
                             <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"></span>
@@ -143,10 +164,10 @@ const submit = () => {
                         <label class="mb-1 block text-sm font-medium">Votre question</label>
                         <textarea v-model="message" rows="4"
                             class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2"
-                            placeholder="Posez votre question..." id="message" />
+                            placeholder="Posez votre question..." />
                     </div>
 
-                    <!-- Bouton -->
+                    <!-- Bouton envoyer -->
                     <button @click="submit" :disabled="isStreaming || isFetching"
                         class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:opacity-50">
                         {{ isFetching ? 'Connexion...' : isStreaming ? 'Génération...' : 'Envoyer' }}
