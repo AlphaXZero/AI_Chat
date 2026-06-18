@@ -7,6 +7,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] redirect when suppr + change alert
 - [ ] make seeder and factory
 - [ ] merge services
 - [ ] update homepage

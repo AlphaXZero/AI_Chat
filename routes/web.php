@@ -16,6 +16,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/ask', [AskController::class, 'ask'])->name('ask.post');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::patch('/settings/ai', [AiSettingsController::class, 'update'])->name('settings.ai.update');
-
+    Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
 });
 require __DIR__ . '/settings.php';

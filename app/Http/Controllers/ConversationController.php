@@ -12,11 +12,19 @@ class ConversationController extends Controller
     {
         abort_unless($conversation->user_id === auth()->id(), 403);
         return Inertia::render('Ask/Index', [
-            'models'        => $simpleAskService->getModels(),
+            'models' => $simpleAskService->getModels(),
             'selectedModel' => $conversation->favorite_ia,
-            'conversation'  => $conversation,
-            'messages'      => $conversation->messages()->orderBy('created_at')->get(),
+            'conversation' => $conversation,
+            'messages' => $conversation->messages()->orderBy('created_at')->get(),
 
         ]);
+    }
+    public function destroy(Conversation $conversation)
+    {
+        abort_unless($conversation->user_id === auth()->id(), 403);
+
+        $conversation->delete();
+
+        return redirect('/ask');
     }
 }

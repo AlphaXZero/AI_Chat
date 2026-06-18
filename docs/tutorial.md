@@ -873,7 +873,7 @@ i added this in the controller, which detect if a / is in the user message and r
 ```
 
 ## Streaming
-it was very boring, check the git, i mainly used claude to achieve making working it (:
+it was very boring, check the git, i mainly used claude to achieve making working it \(:
 
 ## Completing the do-list
 now that the main project is working properly i will do a lot of qol ideas i added in my README.md
@@ -893,6 +893,93 @@ layout: (name) => {
 ```
 we need to change the default since our pagename is ask.index it wont fit anything 
 
+then i used claude to make the navbar
+```html
+        <aside class="flex w-64 flex-col border-r border-neutral-800 bg-neutral-900">
+            <!-- Haut : titre / branding (fixe) -->
+            <div class="shrink-0 border-b border-neutral-800 p-4">
+                <h2 class="text-lg font-bold">💬 Mon Chat</h2>
+            </div>
+
+            <!-- Milieu : liste des conversations (scrolle) -->
+            <div class="min-h-0 flex-1 overflow-y-auto p-3">
+                <Link href="/ask"
+                    class="mb-2 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-700">
+                    + Nouvelle conversation
+                </Link>
+
+                <div v-for="conv in page.props.conversations" :key="conv.id"
+                    class="group flex items-center rounded-lg text-sm text-neutral-300 transition hover:bg-neutral-800"
+                    :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
+
+                    <Link :href="`/conversations/${conv.id}`" class="flex-1 truncate px-3 py-2">
+                        {{ conv.title ?? "Nouvelle conversation" }}
+                    </Link>
+
+                    <button @click="deleteConversation(conv.id)"
+                        class="mr-2 hidden text-neutral-500 hover:text-red-400 group-hover:block">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bas : réglages + déconnexion (fixe) -->
+            <div class="shrink-0 flex flex-col gap-1 border-t border-neutral-800 p-3">
+                <button @click="showSettings = true"
+                    class="rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
+                    ⚙️ Instructions personnalisées
+                </button>
+                <button @click="logout"
+                    class="rounded-lg px-3 py-2 text-left text-sm text-neutral-400 transition hover:bg-neutral-800 hover:text-red-400">
+                    Déconnexion
+                </button>
+            </div>
+        </aside>
+
+```
+
+### button delete conversation
+
+i added a delete route:
+```php
+    Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
+```
+and changed the conversation controller
+```php
+    public function destroy(Conversation $conversation)
+    {
+        abort_unless($conversation->user_id === auth()->id(), 403);
+
+        $conversation->delete();
+
+        return redirect('/ask');
+    }
+```
+
+For the view i added in the script
+```php
+const deleteConversation = (id) => {
+    return router.delete(`/conversations/${id}`)
+}
+```
+
+and changed the "navbar" with converstions
+```html
+                <div v-for="conv in page.props.conversations" :key="conv.id"
+                    class="group flex items-center rounded-lg text-sm text-neutral-300 transition hover:bg-neutral-800"
+                    :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
+
+                    <Link :href="`/conversations/${conv.id}`" class="flex-1 truncate px-3 py-2">
+                        {{ conv.title ?? "Nouvelle conversation" }}
+                    </Link>
+
+                    <button @click="deleteConversation(conv.id)"
+                        class="mr-2 hidden text-neutral-500 hover:text-red-400 group-hover:block">
+                        ✕
+                    </button>
+                </div>
+```
+i changed the link v-for conv into conv in order to separate the link for show and delete
 
 
 ## Misc

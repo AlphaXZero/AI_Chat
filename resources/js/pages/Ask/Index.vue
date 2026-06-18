@@ -73,6 +73,9 @@ const submit = () => {
 const logout = () => {
     router.post('/logout')
 }
+const deleteConversation = (id) => {
+    return router.delete(`/conversations/${id}`)
+}
 </script>
 
 <template>
@@ -95,12 +98,18 @@ const logout = () => {
                     + Nouvelle conversation
                 </Link>
 
-                <div class="flex flex-col gap-1">
-                    <Link v-for="conv in page.props.conversations" :key="conv.id" :href="`/conversations/${conv.id}`"
-                        class="truncate rounded-lg px-3 py-2 text-sm text-neutral-300 transition hover:bg-neutral-800"
-                        :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
+                <div v-for="conv in page.props.conversations" :key="conv.id"
+                    class="group flex items-center rounded-lg text-sm text-neutral-300 transition hover:bg-neutral-800"
+                    :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
+
+                    <Link :href="`/conversations/${conv.id}`" class="flex-1 truncate px-3 py-2">
                         {{ conv.title ?? "Nouvelle conversation" }}
                     </Link>
+
+                    <button @click="deleteConversation(conv.id)"
+                        class="mr-2 hidden text-neutral-500 hover:text-red-400 group-hover:block">
+                        ✕
+                    </button>
                 </div>
             </div>
 

@@ -56,7 +56,7 @@ Entoure ou indique le niveau :
 
 === 4. Démarche suivie
 
-En général, quand je ne comprends pas un truc, je lui demande de me faire un tuto en me faisant réfléchir. Je l'ai également utilisé pour corriger orthographiquement et syntaxiquement le rapport, le `tutorial.md` et le `README.md`.
+Tout d'abord, j'utilise cette instruction sur claude *"Quand je demande d'apprendre un sujet : procède une étape à la fois et attends ma réponse avant de continuer. Pour le code, ne donne jamais la solution complète d'emblée — donne la structure et des indices gradués, et laisse-moi essayer. Si je bloque, donne un indice, pas la réponse, sauf si je demande explicitement "donne-moi la solution"* ce qui permet -quand je ne comprends pas un truc- de lui demander de me faire apprendre. Je l'ai également utilisé pour corriger orthographiquement et syntaxiquement le rapport, le `tutorial.md` et le `README.md`.
 
 Les seules fois où je l'ai vraiment utilisé pour avoir de vrais bouts de code, c'était quand j'ai dû adapter le projet pour utiliser le streaming, pour faire tout le Tailwind et pour m'aider à faire les différentes Vue.
 
@@ -73,6 +73,8 @@ J'ai regardé principalement le cours, la doc de Laravel pour certaines fonction
 *Ce que l'IA m'a apporté :*
 
 Ça accélère beaucoup la création et ça permet de ne pas rester bloqué des heures sur un problème spécifique. Ça m'a également permis d'apprendre en m'aiguillant.
+
+Par contre, même si je trouve avoir une assez bonne compréhension de ce que j'ai fait, je sais que faire un projet de 0 serait compliqué, trouver intuitivement les solutions m'a l'air plus compliqué. Pour pallier ça, J'ai écrit un "journal"(`docs/tutorial.md`) de ce que j'ai fait à chaque fois afin d'avoir une sorte de guide pour refaire un projet Laravel.
 
 #v(4em)
 #line(length: 100%)
