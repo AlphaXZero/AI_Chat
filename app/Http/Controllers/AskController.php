@@ -13,7 +13,8 @@ class AskController extends Controller
     public function __construct(
         private SimpleAskService $askService,
         private SimpleAskStreamService $streamService,
-    ) {}
+    ) {
+    }
 
     public function index()
     {
@@ -75,6 +76,7 @@ class AskController extends Controller
                 $fullResponse = $this->streamService->streamToOutput(
                     messages: $formated_history,
                     model: $validated['model'],
+                    insanity: $conversation->insanity ?? 0,
                 );
 
                 // Stocke la réponse de l'assistant
@@ -91,6 +93,10 @@ class AskController extends Controller
                         system_prompt_file: 'prompts.generate_title',
                     );
                     $conversation->update(['title' => trim($title)]);
+
+                }
+                if ($conversation->insanity < 5) {
+                    $conversation->increment("insanity");
                 }
             },
             headers: [

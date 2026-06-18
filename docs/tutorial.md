@@ -981,6 +981,56 @@ and changed the "navbar" with converstions
 ```
 i changed the link v-for conv into conv in order to separate the link for show and delete
 
+### adding insanity var
+
+we need an insanity entry in the conversation table so we launch a migration
+```php
+php artisan make:migration add_insanity_to_conversation_table
+```
+we implement the migration
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('conversations', function (Blueprint $table) {
+            $table->integer("insanity")->default(0);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('conversations', function (Blueprint $table) {
+            $table->dropColumn("insanity");
+        });
+    }
+};
+
+```
+run the migration
+```php
+php artisan migrate
+```
+
+i wanted to add the a var in the controller but i found a laravel functioin that increment directly the db
+
+```php
+                if ($conversation->insanity < 5) {
+                    $conversation->increment("insanity");
+                }
+```
+
 
 ## Misc
 

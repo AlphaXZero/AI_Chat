@@ -63,11 +63,13 @@ class SimpleAskStreamService
         array $messages,
         ?string $model = null,
         float $temperature = 1.0,
-        ?string $reasoningEffort = null
+        ?string $reasoningEffort = null,
+        int $insanity = 0,
+
     ): string {
         $fullContent = '';   // ← accumulateur
 
-        $response = $this->sendStreamRequest($messages, $model, $temperature, $reasoningEffort);
+        $response = $this->sendStreamRequest($messages, $model, $temperature, $reasoningEffort, $insanity);
 
         if ($response->failed()) {
             echo "[ERROR] " . $response->json('error.message', 'HTTP Error');
@@ -116,11 +118,12 @@ class SimpleAskStreamService
         array $messages,
         ?string $model,
         float $temperature,
-        ?string $reasoningEffort
+        ?string $reasoningEffort,
+        int $insanity,
     ): \Illuminate\Http\Client\Response {
         $payload = [
             'model' => $model ?? self::DEFAULT_MODEL,
-            'messages' => [$this->getSystemPrompt(), ...$messages],
+            'messages' => [$this->getSystemPrompt($insanity), ...$messages],
             'temperature' => $temperature,
             'stream' => true,
         ];
@@ -219,7 +222,7 @@ class SimpleAskStreamService
     /**
      * Retourne le prompt système.
      */
-    private function getSystemPrompt(): array
+    private function getSystemPrompt(int $insanity): array
     {
         $user = auth()->user();
         $profile = $user?->aiSettings->pluck('value', 'setting') ?? collect();
@@ -230,6 +233,7 @@ class SimpleAskStreamService
                 'now' => now()->locale('fr')->format('l d F Y H:i'),
                 'user' => $user?->name ?? 'l\'utilisateur',
                 'profile' => $profile,
+                'insanity' => $insanity,
             ])->render(),
         ];
     }

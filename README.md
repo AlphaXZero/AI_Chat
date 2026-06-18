@@ -1,4 +1,4 @@
-# AI Chat
+# Generic AI Chat
 
 This project is a chat application (in the spirit of ChatGPT) dedicated to learning Laravel. Ask your questions, get explanations, and keep the history of your conversations so you can pick up right where you left off.
 
@@ -7,6 +7,9 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] change the theme when become crazy in more lovercraftian theme
+- [ ] normal title wich transforms in anormal more and more when reaching 5/5 insanity
+- [ ] changing bg more and more to be more lovecraftia
 - [ ] redirect when suppr + change alert
 - [ ] make seeder and factory
 - [ ] merge services

@@ -10,8 +10,8 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->json('shortcut')->nullable();
+        Schema::table('conversations', function (Blueprint $table) {
+            $table->integer("insanity")->default(0);
         });
     }
 
@@ -20,8 +20,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('shortcut');
+        Schema::table('conversations', function (Blueprint $table) {
+            $table->dropColumn("insanity");
         });
     }
 };
