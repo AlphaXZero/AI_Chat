@@ -95,9 +95,7 @@ class AskController extends Controller
                     $conversation->update(['title' => trim($title)]);
 
                 }
-                if ($conversation->insanity < 5) {
-                    $conversation->increment("insanity");
-                }
+                $conversation->increment("insanity");
             },
             headers: [
                 'Content-Type' => 'text/plain; charset=utf-8',
