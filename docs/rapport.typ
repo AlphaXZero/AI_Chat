@@ -145,8 +145,7 @@
 // ============================================================
 #let glossaire(label, content) = text(red, link(label)[#content])
 #show: projet.with(
-  title: [AI Chat\
-    Rapport de projet],
+  title: [Chat Normal],
   subtitle: "SGBD",
   doctype: "Projet de développement ",
   author: "van der Veen Georgé",

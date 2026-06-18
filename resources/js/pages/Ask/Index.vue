@@ -4,6 +4,7 @@ import { usePage, Link, Head, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import { useStream } from '@laravel/stream-vue'
 import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
+import { Plus, Settings, LogOut, X, ArrowUp } from '@lucide/vue'
 
 const page = usePage()
 const props = defineProps({
@@ -15,16 +16,13 @@ const props = defineProps({
 })
 
 const showSettings = ref(false)
-
-// champ de saisie + modèle sélectionné
 const message = ref('')
 const model = ref(props.selectedModel)
-
-// message en cours d'envoi (affiché immédiatement, avant le rechargement)
 const pendingUserMessage = ref('')
-
-// id de conversation renvoyé par le serveur via le header X-Conversation-Id
 const newConversationId = ref(null)
+
+// Niveau de folie actuel
+const insanity = computed(() => props.conversation?.insanity ?? 0)
 
 const { data, isStreaming, isFetching, send } = useStream('/ask', {
     onResponse: (response) => {
@@ -35,13 +33,10 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
         const targetId = newConversationId.value ?? props.conversation?.id
         message.value = ''
         pendingUserMessage.value = ''
-
         if (props.conversation?.id) {
             router.reload()
         } else if (targetId) {
-            router.visit(`/conversations/${targetId}`), {
-                only: ['conversation', 'messages', 'conversations'],
-            }
+            router.visit(`/conversations/${targetId}`)
         } else {
             router.reload()
         }
@@ -52,14 +47,13 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
     },
 })
 
-// contenu en streaming, nettoyé des marqueurs reasoning
 const streamingContent = computed(() => {
     if (!data.value) return ''
     return data.value.replace(/\[REASONING\][\s\S]*?\[\/REASONING\]/g, '').trim()
 })
 
 const submit = () => {
-    if (!message.value.trim()) return
+    if (!message.value.trim() || isStreaming.value || isFetching.value) return
     pendingUserMessage.value = message.value
     const toSend = message.value
     message.value = ''
@@ -70,120 +64,156 @@ const submit = () => {
     })
 }
 
-const logout = () => {
-    router.post('/logout')
+// Envoi avec Entrée (Shift+Entrée pour nouvelle ligne)
+const handleKeydown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        submit()
+    }
 }
-const deleteConversation = (id) => {
-    return router.delete(`/conversations/${id}`)
-}
+
+const logout = () => router.post('/logout')
+const deleteConversation = (id) => router.delete(`/conversations/${id}`)
 </script>
 
 <template>
 
-    <Head title="Poser une question" />
+    <Head title="Lucide — pour l'instant" />
 
-    <!-- height: 100vh garanti en inline pour borner la hauteur (indispensable au scroll interne) -->
-    <div class="flex overflow-hidden bg-neutral-950 text-neutral-100" style="height: 100vh">
-        <!-- Sidebar : titre fixe / conversations scrollables / actions fixes -->
-        <aside class="flex w-64 flex-col border-r border-neutral-800 bg-neutral-900">
-            <!-- Haut : titre / branding (fixe) -->
-            <div class="shrink-0 border-b border-neutral-800 p-4">
-                <h2 class="text-lg font-bold">💬 Mon Chat</h2>
+    <div class="flex overflow-hidden text-slate-100" style="height: 100vh; background: #0a0a0a">
+
+        <!-- ─── Sidebar ─────────────────────────────────────────────── -->
+        <aside class="flex w-60 flex-col border-r" style="background: #0d0d0d; border-color: #222">
+
+            <!-- Branding -->
+            <div class="shrink-0 px-5 py-6" style="border-bottom: 1px solid #1f1f1f">
+                <h1 class="text-base font-bold tracking-[0.25em]" style="color: #d4af37">CHAT NORMAL</h1>
             </div>
 
-            <!-- Milieu : liste des conversations (scrolle) -->
-            <div class="min-h-0 flex-1 overflow-y-auto p-3">
+            <!-- Conversations -->
+            <div class="min-h-0 flex-1 overflow-y-auto px-2 py-3">
                 <Link href="/ask"
-                    class="mb-2 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-blue-700">
-                    + Nouvelle conversation
+                    class="mb-3 flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-300 transition"
+                    style="border: 1px solid #2a2a2a; background: #161616" onmouseover="this.style.background='#1e1e1e'"
+                    onmouseout="this.style.background='#161616'">
+                    <Plus :size="14" /> Nouvelle conversation
                 </Link>
 
                 <div v-for="conv in page.props.conversations" :key="conv.id"
-                    class="group flex items-center rounded-lg text-sm text-neutral-300 transition hover:bg-neutral-800"
-                    :class="{ 'bg-neutral-800 text-white': conv.id === props.conversation?.id }">
-
-                    <Link :href="`/conversations/${conv.id}`" class="flex-1 truncate px-3 py-2">
+                    class="group mb-0.5 flex items-center rounded-lg transition" :style="conv.id === props.conversation?.id
+                        ? 'background: #1a1a1a'
+                        : ''">
+                    <Link :href="`/conversations/${conv.id}`"
+                        class="flex-1 truncate px-3 py-2 text-xs text-slate-400 transition"
+                        :class="{ 'text-slate-200': conv.id === props.conversation?.id }">
                         {{ conv.title ?? "Nouvelle conversation" }}
                     </Link>
-
                     <button @click="deleteConversation(conv.id)"
-                        class="mr-2 hidden text-neutral-500 hover:text-red-400 group-hover:block">
-                        ✕
+                        class="mr-2 hidden rounded text-slate-600 transition hover:text-red-400 group-hover:block">
+                        <X :size="14" />
                     </button>
                 </div>
             </div>
 
-            <!-- Bas : réglages + déconnexion (fixe) -->
-            <div class="shrink-0 flex flex-col gap-1 border-t border-neutral-800 p-3">
+            <!-- Actions -->
+            <div class="shrink-0 px-2 py-3" style="border-top: 1px solid #1f1f1f">
                 <button @click="showSettings = true"
-                    class="rounded-lg px-3 py-2 text-left text-sm text-neutral-300 transition hover:bg-neutral-800">
-                    ⚙️ Instructions personnalisées
+                    class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-slate-400 transition hover:bg-white/5 hover:text-slate-200">
+                    <Settings :size="14" /> Instructions personnalisées
                 </button>
                 <button @click="logout"
-                    class="rounded-lg px-3 py-2 text-left text-sm text-neutral-400 transition hover:bg-neutral-800 hover:text-red-400">
-                    Déconnexion
+                    class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-slate-600 transition hover:bg-white/5 hover:text-red-400">
+                    <LogOut :size="14" /> Déconnexion
                 </button>
             </div>
         </aside>
 
-        <!-- Contenu principal (scrolle indépendamment) -->
-        <main class="min-h-0 flex-1 overflow-y-auto">
-            <div class="mx-auto max-w-3xl space-y-6 px-4 py-10">
-                <h1 class="text-2xl font-bold">Poser une question</h1>
+        <!-- ─── Zone principale ────────────────────────────────────── -->
+        <div class="flex min-w-0 flex-1 flex-col">
 
-                <div class="space-y-4">
-                    <!-- Sélecteur de modèle -->
-                    <div>
-                        <label class="mb-1 block text-sm font-medium">Modèle</label>
-                        <select v-model="model" class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2">
-                            <option v-for="m in props.models" :key="m.id" :value="m.id">
-                                {{ m.name }}
-                            </option>
-                        </select>
+            <!-- Header : modèle + indicateur de folie -->
+            <header class="shrink-0 flex items-center px-6 py-3"
+                style="border-bottom: 1px solid #1f1f1f; background: #0d0d0d">
+
+                <!-- Sélecteur de modèle -->
+                <select v-model="model" class="rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none transition"
+                    style="background: #161616; border: 1px solid #2a2a2a">
+                    <option v-for="m in props.models" :key="m.id" :value="m.id">
+                        {{ m.name }}
+                    </option>
+                </select>
+
+            </header>
+
+            <!-- Messages -->
+            <div class="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+                <div class="mx-auto max-w-2xl space-y-4">
+
+                    <!-- Écran d'accueil si aucune conversation -->
+                    <div v-if="!props.conversation && !pendingUserMessage"
+                        class="flex flex-col items-center justify-center py-24 text-center">
+                        <h2 class="mb-3 text-2xl font-bold tracking-[0.3em]" style="color: #d4af37">CHAT NORMAL</h2>
+                        <p class="text-sm text-slate-500">Commencez une conversation.<br>Il est encore lucide… pour
+                            l'instant.</p>
                     </div>
 
-                    <!-- Messages déjà stockés -->
-                    <div v-for="msg in props.messages" :key="msg.id" :class="msg.role === 'user'
-                        ? 'ml-auto max-w-[80%] rounded-xl bg-blue-600/20 border border-blue-800/40 p-4'
-                        : 'mr-auto max-w-[80%] rounded-xl bg-neutral-900 border border-neutral-700 p-4'">
-                        <MarkdownRenderer :content="msg.content" />
+                    <!-- Messages stockés -->
+                    <div v-for="msg in props.messages" :key="msg.id"
+                        :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                        <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed" :style="msg.role === 'user'
+                            ? 'background: #1a1814; border: 1px solid #33302a'
+                            : 'background: #121212; border: 1px solid #1f1f1f'">
+                            <MarkdownRenderer :content="msg.content" />
+                        </div>
                     </div>
 
                     <!-- Message user en cours d'envoi -->
-                    <div v-if="pendingUserMessage"
-                        class="ml-auto max-w-[80%] rounded-xl border border-blue-800/40 bg-blue-600/20 p-4">
-                        <MarkdownRenderer :content="pendingUserMessage" />
+                    <div v-if="pendingUserMessage" class="flex justify-end">
+                        <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+                            style="background: #1a1814; border: 1px solid #33302a; opacity: 0.7">
+                            <MarkdownRenderer :content="pendingUserMessage" />
+                        </div>
                     </div>
 
-                    <!-- Réponse en cours de streaming -->
-                    <div v-if="isStreaming || isFetching"
-                        class="mr-auto max-w-[80%] rounded-xl border border-neutral-700 bg-neutral-900 p-4">
-                        <MarkdownRenderer v-if="streamingContent" :content="streamingContent" />
-                        <span v-else class="flex gap-1.5">
-                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"></span>
-                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"
-                                style="animation-delay: 0.15s"></span>
-                            <span class="h-2 w-2 animate-bounce rounded-full bg-neutral-500"
-                                style="animation-delay: 0.3s"></span>
-                        </span>
+                    <!-- Réponse en streaming -->
+                    <div v-if="isStreaming || isFetching" class="flex justify-start">
+                        <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+                            style="background: #121212; border: 1px solid #1f1f1f">
+                            <MarkdownRenderer v-if="streamingContent" :content="streamingContent" />
+                            <span v-else class="flex gap-1.5 py-1">
+                                <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"></span>
+                                <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"
+                                    style="animation-delay: 0.15s"></span>
+                                <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"
+                                    style="animation-delay: 0.3s"></span>
+                            </span>
+                        </div>
                     </div>
-
-                    <!-- Champ question -->
-                    <div>
-                        <label class="mb-1 block text-sm font-medium">Votre question</label>
-                        <textarea v-model="message" rows="4"
-                            class="w-full rounded-md border border-neutral-700 bg-neutral-900 p-2"
-                            placeholder="Posez votre question..." />
-                    </div>
-
-                    <!-- Bouton envoyer -->
-                    <button @click="submit" :disabled="isStreaming || isFetching"
-                        class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:opacity-50">
-                        {{ isFetching ? 'Connexion...' : isStreaming ? 'Génération...' : 'Envoyer' }}
-                    </button>
                 </div>
             </div>
-        </main>
+
+            <!-- Zone de saisie (fixe en bas) -->
+            <div class="shrink-0 px-4 pb-5 pt-3" style="border-top: 1px solid #1f1f1f; background: #0d0d0d">
+                <div class="mx-auto max-w-2xl">
+                    <div class="flex items-end gap-2 rounded-2xl p-2"
+                        style="background: #121212; border: 1px solid #2a2a2a">
+                        <textarea v-model="message" @keydown="handleKeydown" rows="1"
+                            class="min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600"
+                            placeholder="Écrivez votre message… (Entrée pour envoyer)"
+                            style="max-height: 160px; overflow-y: auto"
+                            @input="$event.target.style.height = 'auto'; $event.target.style.height = $event.target.scrollHeight + 'px'" />
+                        <button @click="submit" :disabled="isStreaming || isFetching || !message.trim()"
+                            class="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-30"
+                            style="background: #d4af37; color: #0a0a0a">
+                            <ArrowUp :size="16" />
+                        </button>
+                    </div>
+                    <p class="mt-2 text-center text-xs text-slate-700">
+                        Shift+Entrée pour une nouvelle ligne
+                    </p>
+                </div>
+            </div>
+        </div>
 
         <!-- Modale réglages -->
         <AiSettingsModal :open="showSettings" :profile="page.props.aiProfile" :shortcuts="page.props.shortcuts"

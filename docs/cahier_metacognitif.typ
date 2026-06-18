@@ -20,17 +20,13 @@
 
 #v(1em)
 
-== Partie 1 — Déclaration d'usage de l'IA
-
-=== 1. Outil(s) utilisé(s)
+== 1. Outil(s) utilisé(s)
 
 J'ai utilisé Claude, c'est ce qui semblait me donner de meilleurs résultats.
 
-#v(1.3em)
-#line(length: 100%)
-#v(0.8em)
 
-=== 2. Niveau d'usage
+
+== 2. Niveau d'usage
 
 Entoure ou indique le niveau :
 
@@ -41,7 +37,7 @@ Entoure ou indique le niveau :
 
 #v(1em)
 
-=== 3. Utilisation
+== 3. Utilisation
 
 #case(false) comprendre la consigne \
 #case(false) chercher des idées \
@@ -54,49 +50,44 @@ Entoure ou indique le niveau :
 
 #v(1em)
 
-=== 4. Démarche suivie
+== 4. Démarche suivie
 
-Tout d'abord, j'utilise cette instruction sur claude *"Quand je demande d'apprendre un sujet : procède une étape à la fois et attends ma réponse avant de continuer. Pour le code, ne donne jamais la solution complète d'emblée — donne la structure et des indices gradués, et laisse-moi essayer. Si je bloque, donne un indice, pas la réponse, sauf si je demande explicitement "donne-moi la solution"* ce qui permet -quand je ne comprends pas un truc- de lui demander de me faire apprendre. Je l'ai également utilisé pour corriger orthographiquement et syntaxiquement le rapport, le `tutorial.md` et le `README.md`.
+Tout d'abord, j'utilise cette instruction sur claude: *"Quand je demande d'apprendre un sujet : procède une étape à la fois et attends ma réponse avant de continuer. Pour le code, ne donne jamais la solution complète d'emblée — donne la structure et des indices gradués, et laisse-moi essayer. Si je bloque, donne un indice, pas la réponse, sauf si je demande explicitement "donne-moi la solution"* ce qui permet -quand je ne comprends pas un truc- de lui demander de me faire apprendre.
 
-Les seules fois où je l'ai vraiment utilisé pour avoir de vrais bouts de code, c'était quand j'ai dû adapter le projet pour utiliser le streaming, pour faire tout le Tailwind et pour m'aider à faire les différentes Vue.
+Je l'ai également utilisé pour corriger orthographiquement et syntaxiquement le rapport, le `tutorial.md` et le `README.md`.
+
+Les seules fois où je l'ai vraiment utilisé pour avoir de vrais bouts de code, c'était quand j'ai dû adapter le projet pour utiliser le streaming, pour m'aider à faire les différentes Vue et pour génerer le Tailwind que j'ai un tout petit peu modifié par la suite.
 
 #pagebreak()
 
-=== 5. Vérifications réalisées
+== 5. Vérifications réalisées
 
 J'ai regardé principalement le cours, la doc de Laravel pour certaines fonctions et les tutos d'OpenRouter.
+Par exemple, le controller je l'ai pris du cours puis modifier pour le comprendre.
 
 #v(1em)
 
-=== 6. Regard critique
+== 6. Regard critique
 
-*Ce que l'IA m'a apporté :*
+=== Ce que l'IA m'a apporté
 
 Ça accélère beaucoup la création et ça permet de ne pas rester bloqué des heures sur un problème spécifique. Ça m'a également permis d'apprendre en m'aiguillant.
 
-Par contre, même si je trouve avoir une assez bonne compréhension de ce que j'ai fait, je sais que faire un projet de 0 serait compliqué, trouver intuitivement les solutions m'a l'air plus compliqué. Pour pallier ça, J'ai écrit un "journal"(`docs/tutorial.md`) de ce que j'ai fait à chaque fois afin d'avoir une sorte de guide pour refaire un projet Laravel.
+Par contre, même si je trouve avoir une assez bonne compréhension de ce que j'ai fait, je sais que faire un projet de 0 serait compliqué, trouver intuitivement les solutions m'a l'air plus compliqué. Pour pallier ça, J'ai écrit un "journal"(`docs/tutorial.md`) au fil de mon travail qui tente de synthétiser ce que j'ai fait à chaque fois, dans le but d'avoir une sorte de guide pour refaire un projet Laravel ultérieurement.
 
-#v(4em)
-#line(length: 100%)
-#v(1em)
 
-*Ses limites / erreurs éventuelles :*
+=== Ses limites / erreurs éventuelles
 
 Je trouve que ça reste quand même très peu organique. De plus, certains choix architecturaux, quand je lui demandais des tutos, étaient assez douteux.
 
-#v(4em)
-#line(length: 100%)
-#v(1em)
 
-=== 7. Contribution personnelle
+
+== 7. Contribution personnelle
 
 C'est moi qui ai choisi le thème, et j'ai fait tout ce qui était backend moi-même (un peu moins le streaming), en particulier le controller où j'ai vraiment essayé de tout comprendre.
 
-#v(5em)
-#line(length: 100%)
-#v(1em)
 
-=== 8. Attestation
+== 8. Attestation
 
 Je déclare que le travail remis respecte les consignes concernant l'usage de l'IA.
 
