@@ -1,114 +1,82 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
-import InputError from '@/components/InputError.vue';
-import PasswordInput from '@/components/PasswordInput.vue';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { login } from '@/routes';
-import { store } from '@/routes/register';
+import { Form, Head, Link } from '@inertiajs/vue3'
+import InputError from '@/components/InputError.vue'
+import PasswordInput from '@/components/PasswordInput.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 
 defineProps<{
-    passwordRules: string;
-}>();
-
-defineOptions({
-    layout: {
-        title: 'Create an account',
-        description: 'Enter your details below to create your account',
-    },
-});
+    passwordRules: string
+}>()
 </script>
 
 <template>
-    <Head title="Register" />
 
-    <Form
-        v-bind="store.form()"
-        :reset-on-success="['password', 'password_confirmation']"
-        v-slot="{ errors, processing }"
-        class="flex flex-col gap-6"
-    >
-        <div class="grid gap-6">
-            <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input
-                    id="name"
-                    type="text"
-                    required
-                    autofocus
-                    :tabindex="1"
-                    autocomplete="name"
-                    name="name"
-                    placeholder="Full name"
-                />
-                <InputError :message="errors.name" />
+    <Head title="Inscription" />
+
+    <div class="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
+        <div class="w-full max-w-sm space-y-8">
+            <!-- Branding -->
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-white">💬 Mon Chat</h1>
+                <p class="mt-2 text-sm text-neutral-400">Créez un compte pour commencer</p>
             </div>
 
-            <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    required
-                    :tabindex="2"
-                    autocomplete="email"
-                    name="email"
-                    placeholder="email@example.com"
-                />
-                <InputError :message="errors.email" />
-            </div>
+            <!-- Formulaire -->
+            <Form method="post" class="space-y-6">
+                <div class="space-y-4">
+                    <!-- Nom -->
+                    <div class="space-y-2">
+                        <Label for="name" class="text-sm font-medium text-neutral-300">Nom</Label>
+                        <Input id="name" type="text" name="name" required autofocus placeholder="Votre nom complet"
+                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500" />
+                        <InputError name="name" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="password">Password</Label>
-                <PasswordInput
-                    id="password"
-                    required
-                    :tabindex="3"
-                    autocomplete="new-password"
-                    name="password"
-                    placeholder="Password"
-                    :passwordrules="passwordRules"
-                />
-                <InputError :message="errors.password" />
-            </div>
+                    <!-- Email -->
+                    <div class="space-y-2">
+                        <Label for="email" class="text-sm font-medium text-neutral-300">Email</Label>
+                        <Input id="email" type="email" name="email" required placeholder="vous@exemple.com"
+                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500" />
+                        <InputError name="email" />
+                    </div>
 
-            <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
-                <PasswordInput
-                    id="password_confirmation"
-                    required
-                    :tabindex="4"
-                    autocomplete="new-password"
-                    name="password_confirmation"
-                    placeholder="Confirm password"
-                    :passwordrules="passwordRules"
-                />
-                <InputError :message="errors.password_confirmation" />
-            </div>
+                    <!-- Mot de passe -->
+                    <div class="space-y-2">
+                        <Label for="password" class="text-sm font-medium text-neutral-300">Mot de passe</Label>
+                        <PasswordInput id="password" name="password" required placeholder="Au moins 8 caractères"
+                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500"
+                            :passwordrules="passwordRules" />
+                        <InputError name="password" />
+                    </div>
 
-            <Button
-                type="submit"
-                class="mt-2 w-full"
-                tabindex="5"
-                :disabled="processing"
-                data-test="register-user-button"
-            >
-                <Spinner v-if="processing" />
-                Create account
-            </Button>
+                    <!-- Confirmation mot de passe -->
+                    <div class="space-y-2">
+                        <Label for="password_confirmation" class="text-sm font-medium text-neutral-300">Confirmer le mot
+                            de passe</Label>
+                        <PasswordInput id="password_confirmation" name="password_confirmation" required
+                            placeholder="Confirmez votre mot de passe"
+                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500"
+                            :passwordrules="passwordRules" />
+                        <InputError name="password_confirmation" />
+                    </div>
+                </div>
+
+                <!-- Bouton -->
+                <Button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    Créer un compte
+                </Button>
+            </Form>
+
+            <!-- Lien connexion -->
+            <div class="text-center text-sm text-neutral-400">
+                Vous avez déjà un compte ?
+                <Link href="/login" class="text-blue-400 hover:text-blue-300 font-medium">
+                    Se connecter
+                </Link>
+            </div>
         </div>
-
-        <div class="text-center text-sm text-muted-foreground">
-            Already have an account?
-            <TextLink
-                :href="login()"
-                class="underline underline-offset-4"
-                :tabindex="6"
-                >Log in</TextLink
-            >
-        </div>
-    </Form>
+    </div>
 </template>
