@@ -1031,6 +1031,17 @@ i wanted to add the a var in the controller but i found a laravel functioin that
                 }
 ```
 
+to retrieve the insanity level in the view i did that, because i already share the conversation variable
+```php
+const insanity = computed(() => props.conversation?.insanity ?? 0)
+```
+
+### redirect on ask, when logging in
+we juste need to modify thies line in `config/fortify.php`
+```php
+    'home' => '/dashboard',
+```
+
 
 ## Misc
 

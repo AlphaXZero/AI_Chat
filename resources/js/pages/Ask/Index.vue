@@ -21,7 +21,6 @@ const model = ref(props.selectedModel)
 const pendingUserMessage = ref('')
 const newConversationId = ref(null)
 
-// Niveau de folie actuel
 const insanity = computed(() => props.conversation?.insanity ?? 0)
 
 const { data, isStreaming, isFetching, send } = useStream('/ask', {
@@ -64,7 +63,6 @@ const submit = () => {
     })
 }
 
-// Envoi avec Entrée (Shift+Entrée pour nouvelle ligne)
 const handleKeydown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
@@ -153,8 +151,6 @@ const deleteConversation = (id) => router.delete(`/conversations/${id}`)
                     <div v-if="!props.conversation && !pendingUserMessage"
                         class="flex flex-col items-center justify-center py-24 text-center">
                         <h2 class="mb-3 text-2xl font-bold tracking-[0.3em]" style="color: #d4af37">CHAT NORMAL</h2>
-                        <p class="text-sm text-slate-500">Commencez une conversation.<br>Il est encore lucide… pour
-                            l'instant.</p>
                     </div>
 
                     <!-- Messages stockés -->
@@ -208,9 +204,6 @@ const deleteConversation = (id) => router.delete(`/conversations/${id}`)
                             <ArrowUp :size="16" />
                         </button>
                     </div>
-                    <p class="mt-2 text-center text-xs text-slate-700">
-                        Shift+Entrée pour une nouvelle ligne
-                    </p>
                 </div>
             </div>
         </div>

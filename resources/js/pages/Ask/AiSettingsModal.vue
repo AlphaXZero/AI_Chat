@@ -1,15 +1,15 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3'
+import { X, Plus } from '@lucide/vue'
 
 const props = defineProps({
     open: Boolean,
-    profile: { type: Object, default: () => ({}) },   // ex: { emojis: 'peu', tone: 'casual' }
-    shortcuts: { type: Array, default: () => [] },      // ex: [{ command: '/hi', instruction: 'hello' }]
+    profile: { type: Object, default: () => ({}) },
+    shortcuts: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['close'])
 
-// le formulaire : profil + raccourcis
 const form = useForm({
     profile: {
         emojis: props.profile.emojis ?? 'non',
@@ -33,25 +33,31 @@ const save = () => {
 </script>
 
 <template>
-    <!-- overlay : fond sombre cliquable pour fermer -->
-    <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-        @click.self="emit('close')">
-        <!-- la fenêtre -->
-        <div
-            class="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-6 text-neutral-100">
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Instructions personnalisées</h2>
-                <button @click="emit('close')" class="text-neutral-400 hover:text-white">✕</button>
+    <!-- Overlay -->
+    <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style="background: rgba(0,0,0,0.75)" @click.self="emit('close')">
+
+        <!-- Fenêtre -->
+        <div class="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-6 text-slate-100"
+            style="background: #0d0d0d; border: 1px solid #2a2a2a">
+
+            <!-- En-tête -->
+            <div class="mb-6 flex items-center justify-between">
+                <h2 class="text-base font-bold tracking-[0.15em]" style="color: #d4af37">INSTRUCTIONS</h2>
+                <button @click="emit('close')" class="text-slate-500 transition hover:text-slate-200">
+                    <X :size="18" />
+                </button>
             </div>
 
             <!-- PROFIL -->
             <section class="space-y-4">
-                <h3 class="text-sm font-medium text-neutral-400">Comportement de l'assistant</h3>
+                <h3 class="text-xs font-medium uppercase tracking-wider text-slate-500">Comportement de l'assistant</h3>
 
                 <div>
-                    <label class="mb-1 block text-sm">Émojis</label>
+                    <label class="mb-1.5 block text-sm text-slate-300">Émojis</label>
                     <select v-model="form.profile.emojis"
-                        class="w-full rounded-md border border-neutral-700 bg-neutral-800 p-2 text-sm">
+                        class="w-full rounded-lg px-3 py-2 text-sm text-slate-200 outline-none transition"
+                        style="background: #161616; border: 1px solid #2a2a2a">
                         <option value="non">Aucun</option>
                         <option value="peu">Peu</option>
                         <option value="beaucoup">Beaucoup</option>
@@ -59,9 +65,10 @@ const save = () => {
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm">Ton</label>
+                    <label class="mb-1.5 block text-sm text-slate-300">Ton</label>
                     <select v-model="form.profile.tone"
-                        class="w-full rounded-md border border-neutral-700 bg-neutral-800 p-2 text-sm">
+                        class="w-full rounded-lg px-3 py-2 text-sm text-slate-200 outline-none transition"
+                        style="background: #161616; border: 1px solid #2a2a2a">
                         <option value="neutre">Neutre</option>
                         <option value="formel">Formel</option>
                         <option value="casual">Décontracté</option>
@@ -70,9 +77,10 @@ const save = () => {
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm">Longueur des réponses</label>
+                    <label class="mb-1.5 block text-sm text-slate-300">Longueur des réponses</label>
                     <select v-model="form.profile.length"
-                        class="w-full rounded-md border border-neutral-700 bg-neutral-800 p-2 text-sm">
+                        class="w-full rounded-lg px-3 py-2 text-sm text-slate-200 outline-none transition"
+                        style="background: #161616; border: 1px solid #2a2a2a">
                         <option value="concis">Concis</option>
                         <option value="normal">Normal</option>
                         <option value="detaille">Détaillé</option>
@@ -83,34 +91,43 @@ const save = () => {
             <!-- RACCOURCIS -->
             <section class="mt-6 space-y-3">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-medium text-neutral-400">Raccourcis</h3>
+                    <h3 class="text-xs font-medium uppercase tracking-wider text-slate-500">Raccourcis</h3>
                     <button @click="addShortcut"
-                        class="rounded-md bg-neutral-700 px-2 py-1 text-xs hover:bg-neutral-600">+ Ajouter</button>
+                        class="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs text-slate-300 transition hover:text-slate-100"
+                        style="background: #161616; border: 1px solid #2a2a2a">
+                        <Plus :size="12" /> Ajouter
+                    </button>
                 </div>
 
-                <div v-for="(sc, index) in form.shortcuts" :key="index" class="flex gap-2 items-start">
+                <div v-for="(sc, index) in form.shortcuts" :key="index" class="flex items-start gap-2">
                     <input v-model="sc.command" placeholder="/review"
-                        class="w-28 rounded-md border border-neutral-700 bg-neutral-800 p-2 text-sm" />
+                        class="w-28 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600"
+                        style="background: #161616; border: 1px solid #2a2a2a" />
                     <textarea v-model="sc.instruction" placeholder="Instruction à exécuter..." rows="2"
-                        class="flex-1 rounded-md border border-neutral-700 bg-neutral-800 p-2 text-sm" />
-                    <button @click="removeShortcut(index)" class="text-neutral-500 hover:text-red-400 pt-2">✕</button>
+                        class="flex-1 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600"
+                        style="background: #161616; border: 1px solid #2a2a2a" />
+                    <button @click="removeShortcut(index)" class="pt-2 text-slate-600 transition hover:text-red-400">
+                        <X :size="16" />
+                    </button>
                 </div>
 
-                <p v-if="form.shortcuts.length === 0" class="text-xs text-neutral-500">
+                <p v-if="form.shortcuts.length === 0" class="text-xs text-slate-600">
                     Aucun raccourci. Cliquez sur « Ajouter ».
                 </p>
             </section>
 
             <!-- ACTIONS -->
-            <div class="mt-6 flex justify-end gap-2">
+            <div class="mt-8 flex justify-end gap-2">
                 <button @click="emit('close')"
-                    class="rounded-md px-4 py-2 text-sm text-neutral-400 hover:text-white">Annuler</button>
+                    class="rounded-lg px-4 py-2 text-sm text-slate-500 transition hover:text-slate-200">
+                    Annuler
+                </button>
                 <button @click="save" :disabled="form.processing"
-                    class="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
+                    class="rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50"
+                    style="background: #d4af37; color: #0a0a0a">
                     {{ form.processing ? 'Enregistrement...' : 'Enregistrer' }}
                 </button>
             </div>
         </div>
     </div>
-
 </template>

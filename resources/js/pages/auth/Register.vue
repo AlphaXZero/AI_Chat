@@ -5,7 +5,6 @@ import PasswordInput from '@/components/PasswordInput.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
 
 defineProps<{
     passwordRules: string
@@ -16,12 +15,12 @@ defineProps<{
 
     <Head title="Inscription" />
 
-    <div class="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
+    <div class="flex min-h-screen items-center justify-center px-4" style="background: #0a0a0a">
         <div class="w-full max-w-sm space-y-8">
             <!-- Branding -->
             <div class="text-center">
-                <h1 class="text-3xl font-bold text-white">💬 Mon Chat</h1>
-                <p class="mt-2 text-sm text-neutral-400">Créez un compte pour commencer</p>
+                <h1 class="text-2xl font-bold tracking-[0.3em]" style="color: #d4af37">CHAT NORMAL</h1>
+                <p class="mt-3 text-sm text-slate-500">Créez un compte pour commencer</p>
             </div>
 
             <!-- Formulaire -->
@@ -29,51 +28,52 @@ defineProps<{
                 <div class="space-y-4">
                     <!-- Nom -->
                     <div class="space-y-2">
-                        <Label for="name" class="text-sm font-medium text-neutral-300">Nom</Label>
+                        <Label for="name" class="text-sm font-medium text-slate-400">Nom</Label>
                         <Input id="name" type="text" name="name" required autofocus placeholder="Votre nom complet"
-                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500" />
+                            class="text-slate-200 placeholder:text-slate-600"
+                            style="background: #161616; border-color: #2a2a2a" />
                         <InputError name="name" />
                     </div>
 
                     <!-- Email -->
                     <div class="space-y-2">
-                        <Label for="email" class="text-sm font-medium text-neutral-300">Email</Label>
+                        <Label for="email" class="text-sm font-medium text-slate-400">Email</Label>
                         <Input id="email" type="email" name="email" required placeholder="vous@exemple.com"
-                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500" />
+                            class="text-slate-200 placeholder:text-slate-600"
+                            style="background: #161616; border-color: #2a2a2a" />
                         <InputError name="email" />
                     </div>
 
                     <!-- Mot de passe -->
                     <div class="space-y-2">
-                        <Label for="password" class="text-sm font-medium text-neutral-300">Mot de passe</Label>
+                        <Label for="password" class="text-sm font-medium text-slate-400">Mot de passe</Label>
                         <PasswordInput id="password" name="password" required placeholder="Au moins 8 caractères"
-                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500"
-                            :passwordrules="passwordRules" />
+                            class="text-slate-200 placeholder:text-slate-600"
+                            style="background: #161616; border-color: #2a2a2a" :passwordrules="passwordRules" />
                         <InputError name="password" />
                     </div>
 
                     <!-- Confirmation mot de passe -->
                     <div class="space-y-2">
-                        <Label for="password_confirmation" class="text-sm font-medium text-neutral-300">Confirmer le mot
+                        <Label for="password_confirmation" class="text-sm font-medium text-slate-400">Confirmer le mot
                             de passe</Label>
                         <PasswordInput id="password_confirmation" name="password_confirmation" required
-                            placeholder="Confirmez votre mot de passe"
-                            class="bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500"
-                            :passwordrules="passwordRules" />
+                            placeholder="Confirmez votre mot de passe" class="text-slate-200 placeholder:text-slate-600"
+                            style="background: #161616; border-color: #2a2a2a" :passwordrules="passwordRules" />
                         <InputError name="password_confirmation" />
                     </div>
                 </div>
 
                 <!-- Bouton -->
-                <Button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                <Button type="submit" class="w-full font-medium" style="background: #d4af37; color: #0a0a0a">
                     Créer un compte
                 </Button>
             </Form>
 
             <!-- Lien connexion -->
-            <div class="text-center text-sm text-neutral-400">
+            <div class="text-center text-sm text-slate-500">
                 Vous avez déjà un compte ?
-                <Link href="/login" class="text-blue-400 hover:text-blue-300 font-medium">
+                <Link href="/login" class="font-medium" style="color: #d4af37">
                     Se connecter
                 </Link>
             </div>

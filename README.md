@@ -7,6 +7,8 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] adding favorite IA in modal settings
+- [ ] adapt style on other pages
 - [ ] change the theme when become crazy in more lovercraftian theme
 - [ ] normal title wich transforms in anormal more and more when reaching 5/5 insanity
 - [ ] changing bg more and more to be more lovecraftia
