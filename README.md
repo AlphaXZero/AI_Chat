@@ -7,6 +7,8 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] generate title avec claude 3.5 haiku, bug ? only do with question sent by user for better performance
+- [ ] change settings and tittle settings
 - [ ] favorite color in settings to change the color
 - [ ] refactor script index
 - [ ] adding favorite IA in modal settings

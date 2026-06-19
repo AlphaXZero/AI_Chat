@@ -156,12 +156,11 @@
 )
 
 = Introduction
-Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste à développer un clone de "chat IA" fonctionnel et intégré à une base de données relationnelle robuste. Contrairement à de nombreux projets web basés sur des données éphémères, l'enjeu ici est de concevoir un schéma de base de données soigné qui garantit l'intégrité des données, l'efficacité des requêtes, et la scalabilité de l'application.
-
+Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste à développer un clone de "chat IA" fonctionnel et intégré à une base de données relationnelle robuste. Ce projet a pour objectif d'apprendre à utiliser les framework web laravel et Vue ainsi qu'évidemment la gestion de base de données solide.
 == Technologies utilisées
 === Backend
 - Laravel 13.13.0
-- //TODO base de données
+- Sqlite pour le local mais PostgreSQL envisagé pour le dépoloiement
 - ORM eloquent : l'#glossaire(<glossaire:orm>, "ORM") natif de Laravel, chaque table possède un modèle et permet également de gérer les relations entre les tables. Il permet également de faire de l'#glossaire(<glossaire:eager_loading>, "eager loading")
 
 === Frontend
@@ -174,13 +173,26 @@ Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste 
 
 = Thème et identité
 == Thème choisi
-C'est un chat normal à première vue mais qui devient fou au fil de la discussion
+Comme le titre le décrit, c'est jsute un chat ia normal qui répond aux questions des utilisateurs, seulement plus on intéragit avec lui, plus il sombre dans la folie, comme pourrait le faire un personnage lovecraftien.
+Ainsi, au fil de la discussion, il devient incohérent, oublie/rajoute des mots et divague. L'ui change également en réponse, le titre passe donc de "chat normal" à "chat anormal", un gradient rouge s'applique sur les bords pour faire un effet tunnel, si on parle assez le fond change de couleur pour donner une impression de bug.
 
-== Personnalité de l'IA
-L'utilisateur peut choisir la personnalité de l'IA grâce à un bouton qui ouvre une modale et lui permet de choisir des paramètre
-//TODO image
+== Personalitation de l'ia
+Un bouton en bas à gauche permet de configurer à l'aide d'une modale comment nous répond l'ia:
+- *Emojis* : si on veut des réponses avec des smileyrs
+- *Ton* : si on veut que l'ia prenne un ton formel, décontracté, normal ou neutre
+- *Longueur des réponses* : pour configurer si on veut des réponses courtes ou longes
 
-== Modèle de données & architecture
+Dans cette même modale, on peut également définir des racourcis que l'utilisateur peut configurer.
+Par exemple : `/corrige` = "corrige moi l'orthographe et la syntaxe" \
+Ainsi lorsque l'utilisateur fera `/corrige jadorre lé fruit` le site convertira le /corrige et l'assistant corrigera.
+
+== Branding
+J'ai grandement utilisé claude pour le Tailwind et il m'a aidé à mieux faire les vues, ainsi on se retrouve avec un thème assez sobre mais qui se transforme ensuite en interface chargé marquant la folie de l'ia.
+
+= Modèle de données & architecture
+
+
+
 
 
 == Glossaire
