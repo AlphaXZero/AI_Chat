@@ -156,84 +156,86 @@
 )
 
 = Introduction
-Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste à développer un clone de "chat IA" fonctionnel et intégré à une base de données relationnelle robuste. Ce projet a pour objectif d'apprendre à utiliser les framework web laravel et Vue ainsi qu'évidemment la gestion de base de données solide.
+Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste à développer un clone de « chat IA » fonctionnel et intégré à une base de données relationnelle robuste. Il a pour objectif d'apprendre à utiliser les frameworks web Laravel et Vue, ainsi que la gestion d'une base de données solide.
+
 == Technologies utilisées
 === Backend
 - Laravel 13.13.0
-- Sqlite pour le local mais PostgreSQL envisagé pour le dépoloiement
-- ORM eloquent : l'#glossaire(<glossaire:orm>, "ORM") natif de Laravel, chaque table possède un modèle et permet également de gérer les relations entre les tables. Il permet également de faire de l'#glossaire(<glossaire:eager_loading>, "eager loading")
+- SQLite en local, mais PostgreSQL envisagé pour le déploiement.
+- ORM Eloquent : l'#glossaire(<glossaire:orm>, "ORM") natif de Laravel. Chaque table possède un modèle, ce qui permet aussi de gérer les relations entre les tables. Il permet également de faire de l'#glossaire(<glossaire:eager_loading>, "eager loading").
 
 === Frontend
 - Vue 3.5.35
-- Inertia.js: permet de faire des pages dynamiques sans devoir recharger toute la page
+- Inertia.js : permet de faire des pages dynamiques sans devoir recharger toute la page
 - Tailwind
+- shadcn-vue : composants d'interface préstylisés
 
 === Intégration IA
 - API d'#text(blue)[#link("https://openrouter.com")]
 
 = Thème et identité
 == Thème choisi
-Comme le titre le décrit, c'est jsute un chat ia normal qui répond aux questions des utilisateurs, seulement plus on intéragit avec lui, plus il sombre dans la folie, comme pourrait le faire un personnage lovecraftien.
-Ainsi, au fil de la discussion, il devient incohérent, oublie/rajoute des mots et divague. L'ui change également en réponse, le titre passe donc de "chat normal" à "chat anormal", un gradient rouge s'applique sur les bords pour faire un effet tunnel, si on parle assez le fond change de couleur pour donner une impression de bug.
-//TODO 3 cpatures pour interface
+Comme son titre l'indique, c'est juste un chat IA normal qui répond aux questions des utilisateurs. Seulement, plus on interagit avec lui, plus il sombre dans la folie, comme le ferait un personnage lovecraftien. Ainsi, au fil de la discussion, il devient incohérent, oublie ou rajoute des mots, et divague. L'interface change également en réponse : le titre passe de « Chat Normal » à « Chat Anormal », un gradient rouge s'applique sur les bords pour créer un effet tunnel, et si l'on parle assez longtemps, le fond change de couleur pour donner une impression de bug.
+//TODO 3 captures pour interface
 
-== Personalitation de l'ia
-Un bouton en bas à gauche permet de configurer à l'aide d'une modale comment nous répond l'ia:
-- *Emojis* : si on veut des réponses avec des smileyrs
-- *Ton* : si on veut que l'ia prenne un ton formel, décontracté, normal ou neutre
-- *Longueur des réponses* : pour configurer si on veut des réponses courtes ou longes
+== Personnalisation de l'IA
+Un bouton en bas à gauche permet de configurer, à l'aide d'une modale, la façon dont l'IA nous répond :
+- *Emojis* : si l'on veut des réponses avec des smileys
+- *Ton* : si l'on veut que l'IA prenne un ton formel, décontracté, normal ou neutre
+- *Longueur des réponses* : pour configurer si l'on veut des réponses courtes ou longues
 
-Dans cette même modale, on peut également définir des racourcis que l'utilisateur peut configurer.
-Par exemple : `/corrige` = "corrige moi l'orthographe et la syntaxe" \
-Ainsi lorsque l'utilisateur fera `/corrige jadorre lé fruit` le site convertira le /corrige et l'assistant corrigera.
+Dans cette même modale, on peut également définir des raccourcis personnalisables.
+Par exemple : `/corrige` = « corrige-moi l'orthographe et la syntaxe » \
+Ainsi, lorsque l'utilisateur écrira `/corrige jadorre lé fruit`, le site convertira le `/corrige` et l'assistant corrigera la phrase.
 //TODO image configuration + lien
 
 == Branding
-J'ai grandement utilisé claude pour le Tailwind et il m'a aidé à mieux faire les vues, ainsi on se retrouve avec un thème assez sobre mais qui se transforme ensuite en interface chargé marquant la folie de l'ia. J'utilie les icones sobres fournis par laravel.
+J'ai grandement utilisé Claude pour le Tailwind ; il m'a aidé à améliorer les vues. On se retrouve ainsi avec un thème assez sobre, qui se transforme ensuite en une interface chargée marquant la folie de l'IA. J'utilise les icônes sobres fournies par Laravel.
 //TODO lien avec image en haut
 
 = Modèle de données & architecture
-== Diagrame de classe
+== Diagramme de classe
 //TODO diagramme
-== tables et relations
-=== table User
-La table user contient les différentes informations de connexion, le nom qui est également utilisé par le systeme prompt(/*TODO link vers gloassarie)*/) l'ia favorite pour choisir l'ia par défaut lorsqu'on fait un nouvea chat et enfin les raccourcis configurables, elle ont une structure json car étant donné que c'est tout le temps une structure ["command": "...", "instruction" : "..."], c'est facilment maintenable et ça m'évite de créer une table annexe
-=== table AoSetting
-cette table sert à configurer comment l'ia nous répond, j'ai choisi de faire une table séparé plutôt qu'un json pour ces paramteres car elles peuvent changer, c'est donc plus maintenable, accesible et scalable, il ya donc le setting avec sa valeur.
-*clé étrangère* vers user afin que chaque utilisateur aie ses paramètres
-la relation est User "1" --> "0..\*" Ai Setting pour simplifier mais devrait être User "1" --> "{{nombre de settings}}..\*" Ai Setting
 
+== Tables et relations
+=== Table User
+La table `user` contient les différentes informations de connexion, le nom (également utilisé par le system prompt), l'IA favorite (pour choisir l'IA par défaut lors d'un nouveau chat) et enfin les raccourcis configurables. Ceux-ci ont une structure JSON : comme c'est toujours une structure `{ "command": "...", "instruction": "..." }`, c'est facilement maintenable et cela m'évite de créer une table annexe.
 
-=== table Conversaton
-Celle-ci permetra d'afficher les conversations sous forme de liste, on y retrouve, le titre, un autre champ ia favorite pour une discussion précise qui prendra le pas sur celle par défaut dans la table user. On y voit aussi le niveau d'insanité qui modifie le comportement de l'ia ainsi que l'ui, ce champ est dans cette table et pas une autre car j'ai choisi que l'ia devient reset quand on change de conversation. le dernier champ important est updated_at qui permet de trier les conversations pour mettre celle avec l'avtivité la plus récente en avant.
-*clé étrangère* vers user afin de voir toutes les conversations d'un utilisateur et les rendre privés pour ce dernier
-la relation est User "1" --> "0..\*" conversation car l'utilsateur n'a pas de conversation quand il vient de créer son compte
+=== Table AiSetting
+Cette table sert à configurer la façon dont l'IA nous répond. J'ai choisi de faire une table séparée plutôt qu'un JSON pour ces paramètres car ils peuvent évoluer ; c'est donc plus maintenable, accessible et scalable. On y trouve donc le `setting` avec sa `value`.
+*Clé étrangère* vers `user`, afin que chaque utilisateur ait ses propres paramètres.
+La relation est `User "1" --> "0..*" AiSetting` pour simplifier, mais devrait être `User "1" --> "{nombre de settings}..*" AiSetting`.
 
+=== Table Conversation
+Celle-ci permettra d'afficher les conversations sous forme de liste. On y retrouve le titre, un autre champ « IA favorite » pour une discussion précise (qui prendra le pas sur celle par défaut de la table `user`). On y voit aussi le niveau d'insanité, qui modifie le comportement de l'IA ainsi que l'interface ; ce champ est dans cette table et pas une autre car j'ai choisi que l'IA se réinitialise quand on change de conversation. Le dernier champ important est `updated_at`, qui permet de trier les conversations pour mettre celle dont l'activité est la plus récente en avant.
+*Clé étrangère* vers `user`, afin de voir toutes les conversations d'un utilisateur et de les rendre privées.
+La relation est `User "1" --> "0..*" Conversation` car l'utilisateur n'a aucune conversation quand il vient de créer son compte.
 
-=== table Message
-Avec la table message, nous avons le contenu de chaque message ainsi que le role qui est soit "assitant" soit "user" pour aider à la disposition dans l'interface, dans la même optique le champ created_at permet de connaitre l'ordre des messages
-*clé étrangère* vers conversation pour reconstituer l'historique de la communction avec l'assitant intéligent
-la relation est Conversation "1" --> "1..\*" Message car une conversation n'est créé que lorsque le premier message est entrée
+=== Table Message
+Avec la table `message`, nous avons le contenu de chaque message ainsi que le rôle, qui est soit « assistant » soit « user », pour aider à la disposition dans l'interface. Dans la même optique, le champ `created_at` permet de connaître l'ordre des messages.
+*Clé étrangère* vers `conversation`, pour reconstituer l'historique de la communication avec l'assistant.
+La relation est `Conversation "1" --> "1..*" Message` car une conversation n'est créée que lorsque le premier message est entré.
 
-=== table image
-Elle peremt de stocker les images avec un url64/*TODO vérfierp puis mettre à jour quand en place*/ et un placeholder si l'image ne charge pas
-*clé étrangère* vers conversation pour reconstituer l'historique de la communction avec l'assitant intélige
-la relation est Conversation "1" --> "0..\*" Image car une conversation n'est pas obligé d'avoir une image
+=== Table Image
+Elle permet de stocker les images avec une URL (en base64) et un placeholder si l'image ne charge pas.
+//TODO vérifier puis mettre à jour quand en place
+*Clé étrangère* vers `conversation`.
+La relation est `Conversation "1" --> "0..*" Image` car une conversation n'est pas obligée d'avoir une image.
 
-== Constraintes
-Toutes les talbes ont la contrainte deleteOnCascade quand elle ont une foreign key afin de ne pas surcharger la bdd.
-Par exemple, lorsque conversation est supprimer ça delete les message en deleteOnCascade
+== Contraintes
+Toutes les tables ayant une clé étrangère possèdent la contrainte `deleteOnCascade`, afin de ne pas surcharger la base de données. Par exemple, lorsqu'une conversation est supprimée, cela supprime les messages en cascade.
 //TODO ajouter screen + glossaire pour delete on cascade
 
-== documentation du code
-//TODO compléter pour le moemnt pas de docs
+== Documentation du code & gestion des erreurs
+Les entrées utilisateur sont validées dans les contrôleurs via `$request->validate(...)`, qui rejette toute requête mal formée avant traitement. L'accès aux conversations est protégé par `abort_unless($conversation->user_id === auth()->id(), 403)`, garantissant qu'un utilisateur ne peut consulter ou supprimer que ses propres conversations. Les valeurs potentiellement absentes (comme le niveau d'insanité d'une conversation fraîchement créée) sont sécurisées par des valeurs par défaut.
+//TODO compléter avec extraits de code annotés vérifier ce qui'l y a écrit en haut
 
-== diagrammes complémentaires
+== Diagrammes complémentaires
 //TODO pourquoi pas un séquence mais bon boring en vrai
 
-= Fonctionnalités implémentés
-== Focntionnalités obligatoires
-=== sélecteur de modèles
+= Fonctionnalités implémentées
+== Fonctionnalités obligatoires
+=== Sélecteur de modèles
 //TODO capture
 === Historique + titre auto
 //TODO capture
@@ -242,29 +244,30 @@ Par exemple, lorsque conversation est supprimer ça delete les message en delete
 === Instructions personnalisées
 //TODO capture
 
-== Focntionnalités supplémentaires
-- on peut choisir l'ia favorite par discussion et par user
-- l'ia a un comportement en fonction de la longueur de la discussion
--//TODO ajouter fonctionnalités dans le todo readme
+== Fonctionnalités supplémentaires
+- On peut choisir l'IA favorite par discussion et par utilisateur
+- L'IA a un comportement qui évolue en fonction de la longueur de la discussion
+//TODO ajouter fonctionnalités dans le TODO du README
 
-= Difficultés rencontrés
-J'ai tenu un journal de tout ce que j'ai fait dans docs/tutorial.md la plupart des difficultés peuvent être voir la bas mais voici u nexemple
+= Difficultés rencontrées
+J'ai tenu un journal de tout ce que j'ai fait dans `docs/tutorial.md` ; la plupart des difficultés peuvent y être consultées, mais en voici un exemple.
 //TODO ajouter un truc cool avec capture
 
 = Tests
-// TODO fair etest
+//TODO faire test
 
-= Utilisation de l'ia
-- Corrction orthographe et syntaxe de rapport, readme, tutorial. J'écris tout moi même puis je demande à l'ia de corriger en gardant mes tournures de phrases et je vérifie après
-- Tutoriels: quand il y a un truc que je ne sais pas faire, je lui demande de me faire un tuto sans donner les réponses, je lui demande d'attendre le code pour validation de ce que j'ai fais à chaque fois
-- adaptation du code: j'avais fait tout le controller moi-même mais lors de l'adptation pour le steaming je ne comprenais pas grand chose alors je l'ai utiliser pour qu'il m'aide à adpater le code du cours dans mon controller puis j'ai modifier ce controller pour comprendre
-- test: j'ai entierement fait les test par ia, j'ai fait les seeders et factory moi-meme
-- Tailwind : le tailwind a également été fait par ia, je modifiais juste quelques tailles/couleurs par la suite
-- Vue : il m'a grandement aidé a trouver les balises et parametres pour avoir ce que je veuxs
+= Utilisation de l'IA
+- *Correction* orthographe et syntaxe du rapport, du README et du tutoriel. J'écris tout moi-même, puis je demande à l'IA de corriger en gardant mes tournures de phrases, et je vérifie après.
+- *Tutoriels* : quand il y a quelque chose que je ne sais pas faire, je lui demande de me faire un tutoriel sans donner les réponses ; je lui demande d'attendre mon code pour validation à chaque étape.
+- *Adaptation du code* : j'avais fait tout le contrôleur moi-même, mais lors de l'adaptation pour le streaming je ne comprenais pas grand-chose, alors je l'ai utilisé pour m'aider à adapter le code du cours dans mon contrôleur, puis j'ai modifié ce contrôleur pour comprendre.
+- *Tests* : j'ai entièrement fait les tests par IA ; j'ai fait les seeders et factories moi-même.
+- *Tailwind* : le Tailwind a également été fait par IA ; je modifiais juste quelques tailles et couleurs par la suite.
+- *Vue* : il m'a grandement aidé à trouver les balises et paramètres pour obtenir ce que je voulais.
 
-= utilisation
-j'ai appris a utiliser un framework, appronfondis mes connaissances de requetes http qu'on avait vu dans le cours de reseau et l'utilisation de routes.
-
+= Réflexion, améliorations & conclusion
+Ce projet m'a permis d'apprendre à utiliser un framework web complet, d'approfondir mes connaissances des requêtes HTTP vues dans le cours de réseau, et de mieux comprendre l'utilisation des routes et d'un ORM.
+.
+En conclusion, ce projet m'a fait progresser autant sur la conception d'une base de données relationnelle cohérente que sur le développement front-end et l'intégration d'une API d'IA en streaming.
 
 == Glossaire
 #table(
@@ -275,5 +278,5 @@ j'ai appris a utiliser un framework, appronfondis mes connaissances de requetes 
   [Technique d'optimisation Eloquent qui charge les relations associées en une seule requête SQL au lieu d'une requête par relation.],
 
   [ORM <glossaire:orm>],
-  [Object-Relational-Mapper, il permet d'intéragir avec la base de données avec des objets au lieu de faire des requêtes SQL.],
+  [Object-Relational Mapper : il permet d'interagir avec la base de données via des objets au lieu d'écrire des requêtes SQL.],
 )
