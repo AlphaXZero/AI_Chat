@@ -8,6 +8,7 @@ This project also serves as a learning resource: it's built step by step, and ea
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
 - [ ] generate title avec claude 3.5 haiku, bug ? only do with question sent by user for better performance
+- [ ] verify ai settinfs default
 - [ ] change settings and tittle settings
 - [ ] favorite color in settings to change the color
 - [ ] refactor script index

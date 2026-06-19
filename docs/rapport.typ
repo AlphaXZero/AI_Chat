@@ -175,6 +175,7 @@ Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste 
 == Thème choisi
 Comme le titre le décrit, c'est jsute un chat ia normal qui répond aux questions des utilisateurs, seulement plus on intéragit avec lui, plus il sombre dans la folie, comme pourrait le faire un personnage lovecraftien.
 Ainsi, au fil de la discussion, il devient incohérent, oublie/rajoute des mots et divague. L'ui change également en réponse, le titre passe donc de "chat normal" à "chat anormal", un gradient rouge s'applique sur les bords pour faire un effet tunnel, si on parle assez le fond change de couleur pour donner une impression de bug.
+//TODO 3 cpatures pour interface
 
 == Personalitation de l'ia
 Un bouton en bas à gauche permet de configurer à l'aide d'une modale comment nous répond l'ia:
@@ -185,14 +186,84 @@ Un bouton en bas à gauche permet de configurer à l'aide d'une modale comment n
 Dans cette même modale, on peut également définir des racourcis que l'utilisateur peut configurer.
 Par exemple : `/corrige` = "corrige moi l'orthographe et la syntaxe" \
 Ainsi lorsque l'utilisateur fera `/corrige jadorre lé fruit` le site convertira le /corrige et l'assistant corrigera.
+//TODO image configuration + lien
 
 == Branding
-J'ai grandement utilisé claude pour le Tailwind et il m'a aidé à mieux faire les vues, ainsi on se retrouve avec un thème assez sobre mais qui se transforme ensuite en interface chargé marquant la folie de l'ia.
+J'ai grandement utilisé claude pour le Tailwind et il m'a aidé à mieux faire les vues, ainsi on se retrouve avec un thème assez sobre mais qui se transforme ensuite en interface chargé marquant la folie de l'ia. J'utilie les icones sobres fournis par laravel.
+//TODO lien avec image en haut
 
 = Modèle de données & architecture
+== Diagrame de classe
+//TODO diagramme
+== tables et relations
+=== table User
+La table user contient les différentes informations de connexion, le nom qui est également utilisé par le systeme prompt(/*TODO link vers gloassarie)*/) l'ia favorite pour choisir l'ia par défaut lorsqu'on fait un nouvea chat et enfin les raccourcis configurables, elle ont une structure json car étant donné que c'est tout le temps une structure ["command": "...", "instruction" : "..."], c'est facilment maintenable et ça m'évite de créer une table annexe
+=== table AoSetting
+cette table sert à configurer comment l'ia nous répond, j'ai choisi de faire une table séparé plutôt qu'un json pour ces paramteres car elles peuvent changer, c'est donc plus maintenable, accesible et scalable, il ya donc le setting avec sa valeur.
+*clé étrangère* vers user afin que chaque utilisateur aie ses paramètres
+la relation est User "1" --> "0..\*" Ai Setting pour simplifier mais devrait être User "1" --> "{{nombre de settings}}..\*" Ai Setting
 
 
+=== table Conversaton
+Celle-ci permetra d'afficher les conversations sous forme de liste, on y retrouve, le titre, un autre champ ia favorite pour une discussion précise qui prendra le pas sur celle par défaut dans la table user. On y voit aussi le niveau d'insanité qui modifie le comportement de l'ia ainsi que l'ui, ce champ est dans cette table et pas une autre car j'ai choisi que l'ia devient reset quand on change de conversation. le dernier champ important est updated_at qui permet de trier les conversations pour mettre celle avec l'avtivité la plus récente en avant.
+*clé étrangère* vers user afin de voir toutes les conversations d'un utilisateur et les rendre privés pour ce dernier
+la relation est User "1" --> "0..\*" conversation car l'utilsateur n'a pas de conversation quand il vient de créer son compte
 
+
+=== table Message
+Avec la table message, nous avons le contenu de chaque message ainsi que le role qui est soit "assitant" soit "user" pour aider à la disposition dans l'interface, dans la même optique le champ created_at permet de connaitre l'ordre des messages
+*clé étrangère* vers conversation pour reconstituer l'historique de la communction avec l'assitant intéligent
+la relation est Conversation "1" --> "1..\*" Message car une conversation n'est créé que lorsque le premier message est entrée
+
+=== table image
+Elle peremt de stocker les images avec un url64/*TODO vérfierp puis mettre à jour quand en place*/ et un placeholder si l'image ne charge pas
+*clé étrangère* vers conversation pour reconstituer l'historique de la communction avec l'assitant intélige
+la relation est Conversation "1" --> "0..\*" Image car une conversation n'est pas obligé d'avoir une image
+
+== Constraintes
+Toutes les talbes ont la contrainte deleteOnCascade quand elle ont une foreign key afin de ne pas surcharger la bdd.
+Par exemple, lorsque conversation est supprimer ça delete les message en deleteOnCascade
+//TODO ajouter screen + glossaire pour delete on cascade
+
+== documentation du code
+//TODO compléter pour le moemnt pas de docs
+
+== diagrammes complémentaires
+//TODO pourquoi pas un séquence mais bon boring en vrai
+
+= Fonctionnalités implémentés
+== Focntionnalités obligatoires
+=== sélecteur de modèles
+//TODO capture
+=== Historique + titre auto
+//TODO capture
+=== Streaming
+//TODO capture
+=== Instructions personnalisées
+//TODO capture
+
+== Focntionnalités supplémentaires
+- on peut choisir l'ia favorite par discussion et par user
+- l'ia a un comportement en fonction de la longueur de la discussion
+-//TODO ajouter fonctionnalités dans le todo readme
+
+= Difficultés rencontrés
+J'ai tenu un journal de tout ce que j'ai fait dans docs/tutorial.md la plupart des difficultés peuvent être voir la bas mais voici u nexemple
+//TODO ajouter un truc cool avec capture
+
+= Tests
+// TODO fair etest
+
+= Utilisation de l'ia
+- Corrction orthographe et syntaxe de rapport, readme, tutorial. J'écris tout moi même puis je demande à l'ia de corriger en gardant mes tournures de phrases et je vérifie après
+- Tutoriels: quand il y a un truc que je ne sais pas faire, je lui demande de me faire un tuto sans donner les réponses, je lui demande d'attendre le code pour validation de ce que j'ai fais à chaque fois
+- adaptation du code: j'avais fait tout le controller moi-même mais lors de l'adptation pour le steaming je ne comprenais pas grand chose alors je l'ai utiliser pour qu'il m'aide à adpater le code du cours dans mon controller puis j'ai modifier ce controller pour comprendre
+- test: j'ai entierement fait les test par ia, j'ai fait les seeders et factory moi-meme
+- Tailwind : le tailwind a également été fait par ia, je modifiais juste quelques tailles/couleurs par la suite
+- Vue : il m'a grandement aidé a trouver les balises et parametres pour avoir ce que je veuxs
+
+= utilisation
+j'ai appris a utiliser un framework, appronfondis mes connaissances de requetes http qu'on avait vu dans le cours de reseau et l'utilisation de routes.
 
 
 == Glossaire

@@ -7,7 +7,7 @@ class User {
   favorite_ia: string
   shortcut: json
   ' Structure du shortcut (tableau d'objets) :
-  ' [{ "shortcut": "hi", "command": "hello " }, ...]
+  ' [{ "command": "hi", "instruction": "hello " }, ...]
 }
 class AiSetting {
   id: int
@@ -34,7 +34,7 @@ class Image {
   placeholder: string
 }
 User "1" -- "0..*" Conversation : has >
-User "1" -- "0..*" Ai_Settings : is configured >
+User "1" -- "0..*" AiSetting : has settings >
 Conversation "1" -- "1..*" Message : is made of >
 Message "1" -- "0..*" Image : contains >
 @enduml
