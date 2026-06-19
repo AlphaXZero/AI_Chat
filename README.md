@@ -7,6 +7,8 @@ This project also serves as a learning resource: it's built step by step, and ea
 ## TO DO list
 
 - [X] LLM API integration via [OpenRouter](https://openrouter.ai)
+- [ ] favorite color in settings to change the color
+- [ ] refactor script index
 - [ ] adding favorite IA in modal settings
 - [ ] adapt style on other pages
 - [ ] change the theme when become crazy in more lovercraftian theme

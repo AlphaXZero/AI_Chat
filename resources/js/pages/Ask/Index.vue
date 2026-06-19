@@ -75,7 +75,7 @@ const deleteConversation = (id) => router.delete(`/conversations/${id}`)
 
 const aOpacity = computed(() => {
     if (insanity.value >= 5) return 1
-    return insanity.value * 0.06
+    return insanity.value * 0.03
 })
 
 const titleColor = computed(() => {
@@ -88,11 +88,31 @@ const titleColor = computed(() => {
     if (i === 5) return '#f72612'
     return '#ff0000'
 })
+
+const ambianceIntensity = computed(() => {
+    const i = insanity.value
+    if (i <= 4) {
+        return i * 0.02
+    }
+    return Math.min(0.15 + (i - 4) * 0.15, 2)
+})
+
+const pulseStyle = computed(() => {
+    if (insanity.value < 5) return {}
+    const speed = Math.max(5 - (insanity.value - 5) * 0.5, 1.8)
+    return { animation: `pulse-ambiance ${speed}s ease-in-out infinite` }
+})
 </script>
 
 <template>
 
     <div class="flex overflow-hidden text-slate-100" style="height: 100vh; background: #0a0a0a">
+        <div class="pointer-events-none fixed inset-0 z-0" :style="{
+            background: `radial-gradient(ellipse at center, transparent 35%, rgba(100,0,0,${ambianceIntensity}) 100%)`,
+            ...pulseStyle
+        }">
+        </div>
+
 
         <!-- ─── Sidebar ─────────────────────────────────────────────── -->
         <aside class="flex w-60 flex-col border-r" style="background: #0d0d0d; border-color: #222">
@@ -229,3 +249,16 @@ const titleColor = computed(() => {
             @close="showSettings = false" />
     </div>
 </template>
+<style>
+@keyframes pulse-ambiance {
+
+    0%,
+    100% {
+        opacity: 0.55;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+</style>
