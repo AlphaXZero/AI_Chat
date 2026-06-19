@@ -91,9 +91,7 @@ const titleColor = computed(() => {
 
 const ambianceIntensity = computed(() => {
     const i = insanity.value
-    if (i <= 4) {
-        return i * 0.02
-    }
+    if (i <= 4) return i * 0.02
     return Math.min(0.15 + (i - 4) * 0.15, 2)
 })
 
@@ -106,13 +104,16 @@ const pulseStyle = computed(() => {
 
 <template>
 
-    <div class="flex overflow-hidden text-slate-100" style="height: 100vh; background: #0a0a0a">
+    <Head title="Chat Normal" />
+
+    <div class="flex overflow-hidden text-slate-100" :class="insanity >= 6 ? 'reality-broken' : 'bg-normal'"
+        style="height: 100vh">
+
+        <!-- Couche d'ambiance (vignettage rouge + pulsation) -->
         <div class="pointer-events-none fixed inset-0 z-0" :style="{
             background: `radial-gradient(ellipse at center, transparent 35%, rgba(100,0,0,${ambianceIntensity}) 100%)`,
             ...pulseStyle
-        }">
-        </div>
-
+        }"></div>
 
         <!-- ─── Sidebar ─────────────────────────────────────────────── -->
         <aside class="flex w-60 flex-col border-r" style="background: #0d0d0d; border-color: #222">
@@ -165,18 +166,15 @@ const pulseStyle = computed(() => {
         <!-- ─── Zone principale ────────────────────────────────────── -->
         <div class="flex min-w-0 flex-1 flex-col">
 
-            <!-- Header : modèle + indicateur de folie -->
+            <!-- Header : sélecteur de modèle -->
             <header class="shrink-0 flex items-center px-6 py-3"
                 style="border-bottom: 1px solid #1f1f1f; background: #0d0d0d">
-
-                <!-- Sélecteur de modèle -->
                 <select v-model="model" class="rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none transition"
                     style="background: #161616; border: 1px solid #2a2a2a">
                     <option v-for="m in props.models" :key="m.id" :value="m.id">
                         {{ m.name }}
                     </option>
                 </select>
-
             </header>
 
             <!-- Messages -->
@@ -249,6 +247,7 @@ const pulseStyle = computed(() => {
             @close="showSettings = false" />
     </div>
 </template>
+
 <style>
 @keyframes pulse-ambiance {
 
@@ -260,5 +259,18 @@ const pulseStyle = computed(() => {
     50% {
         opacity: 1;
     }
+}
+
+.bg-normal {
+    background: #0a0a0a;
+}
+
+.reality-broken {
+    background-color: #000;
+    background-image:
+        linear-gradient(45deg, #3d0a52 25%, transparent 25%, transparent 75%, #3d0a52 75%),
+        linear-gradient(45deg, #3d0a52 25%, transparent 25%, transparent 75%, #3d0a52 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
 }
 </style>
