@@ -1042,6 +1042,34 @@ we juste need to modify thies line in `config/fortify.php`
     'home' => '/dashboard',
 ```
 
+### changing ui by insanity level   
+in the script i added those vlaue
+```php
+const aOpacity = computed(() => {
+    if (insanity.value >= 5) return 1
+    return insanity.value * 0.06
+})
+
+const titleColor = computed(() => {
+    const i = insanity.value
+    if (i <= 0) return '#d4af37'
+    if (i === 1) return '#dc9730'
+    if (i === 2) return '#e37e2a'
+    if (i === 3) return '#e96323'
+    if (i === 4) return '#f0451c'
+    if (i === 5) return '#f72612'
+    return '#ff0000'
+})
+```
+with that in the template
+```php
+    <h1 class="text-base font-bold tracking-[0.25em]" :style="{ color: titleColor }">
+        CHAT <span :style="{ opacity: aOpacity }">A</span>NORMAL
+    </h1>
+```
+
+
+
 
 ## Misc
 

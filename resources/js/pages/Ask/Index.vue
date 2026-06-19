@@ -72,11 +72,25 @@ const handleKeydown = (e) => {
 
 const logout = () => router.post('/logout')
 const deleteConversation = (id) => router.delete(`/conversations/${id}`)
+
+const aOpacity = computed(() => {
+    if (insanity.value >= 5) return 1
+    return insanity.value * 0.06
+})
+
+const titleColor = computed(() => {
+    const i = insanity.value
+    if (i <= 0) return '#d4af37'
+    if (i === 1) return '#dc9730'
+    if (i === 2) return '#e37e2a'
+    if (i === 3) return '#e96323'
+    if (i === 4) return '#f0451c'
+    if (i === 5) return '#f72612'
+    return '#ff0000'
+})
 </script>
 
 <template>
-
-    <Head title="Lucide — pour l'instant" />
 
     <div class="flex overflow-hidden text-slate-100" style="height: 100vh; background: #0a0a0a">
 
@@ -85,7 +99,9 @@ const deleteConversation = (id) => router.delete(`/conversations/${id}`)
 
             <!-- Branding -->
             <div class="shrink-0 px-5 py-6" style="border-bottom: 1px solid #1f1f1f">
-                <h1 class="text-base font-bold tracking-[0.25em]" style="color: #d4af37">CHAT NORMAL</h1>
+                <h1 class="text-base font-bold tracking-[0.25em]" :style="{ color: titleColor }">
+                    CHAT <span :style="{ opacity: aOpacity }">A</span>NORMAL
+                </h1>
             </div>
 
             <!-- Conversations -->
