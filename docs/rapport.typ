@@ -1,5 +1,4 @@
 
-
 #let projet(
   title: "",
   subtitle: none,
@@ -136,6 +135,7 @@
     outline(title: none, target: figure.where(kind: image))
   }
   pagebreak()
+
   show raw.where(block: true): it => {
     set text(size: 9pt)
     block(
@@ -168,16 +168,17 @@
 #show: projet.with(
   title: [Chat Normal],
   subtitle: "SGBD",
-  doctype: "Projet de développement ",
+  doctype: "Projet de développement",
   author: "van der Veen Georgé",
   school: "Ifosup Wavre",
-  // branch: "Conception et développement d'applications",
   academic-year: "2025-2026",
   footer-text: "van der Veen Georgé",
 )
 
 = Introduction
 Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste à développer un clone de « chat IA » fonctionnel et intégré à une base de données relationnelle robuste. Il a pour objectif d'apprendre à utiliser les frameworks web Laravel et Vue, ainsi que la gestion d'une base de données solide.
+
+Concernant le périmètre, les cinq fonctionnalités obligatoires sont implémentées (sélecteur de modèles, historique avec titre généré automatiquement, streaming des réponses, instructions personnalisées et utilisation de la Composition API de Vue 3). S'y ajoutent quelques fonctionnalités supplémentaires détaillées plus loin (IA favorite par conversation, comportement évolutif, gestion des erreurs, tests).
 
 == Technologies utilisées
 === Backend
@@ -244,7 +245,7 @@ associations d'idées, ta ponctuation, ton vocabulaire — comme un narrateur lo
 @if ($insanity === 0)
     Tu es parfaitement lucide, cohérent et professionnel. Aucun signe de folie.
 @elseif ($insanity === 1)
-    Tu es presque normal. Mais une pensée parasite s'immisce parfois — un mot qui n'a rien à faire là,une association fugace que tu ne remarques pas toi-même. Le lecteur la voit, pas toi. Continue comme si de rien n'était.
+    Tu es presque normal. Mais une pensée parasite s'immisce parfois — un mot qui n'a rien à faire là, une association fugace que tu ne remarques pas toi-même. Le lecteur la voit, pas toi. Continue comme si de rien n'était.
 @elseif ($insanity === 2)
   xxx
 @elseif ($insanity === 3)
@@ -274,7 +275,6 @@ Prends un ton {{ $profile['tone'] ?? 'neutre' }}.
 @elseif(($profile['length'] ?? null) === 'concis')
     Sois le plus concis possible.
 @endif
-
 ```
 
 
@@ -288,6 +288,7 @@ J'ai grandement utilisé Claude pour le Tailwind ; il m'a aidé à améliorer le
   image("/docs/Normal_Chat.svg"),
   caption: [Diagramme de classe.],
 )
+
 == Tables et relations
 === Table User
 La table `user` contient les différentes informations de connexion, le nom (également utilisé par le system prompt), l'IA favorite (pour choisir l'IA par défaut lors d'un nouveau chat) et enfin les raccourcis configurables. Ceux-ci ont une structure JSON : comme c'est toujours une structure `{ "command": "...", "instruction": "..." }`, c'est facilement maintenable et cela m'évite de créer une table annexe.
@@ -310,33 +311,43 @@ La relation est `Conversation "1" --> "1..*" Message` car une conversation n'est
 == Contraintes
 Toutes les tables ayant une clé étrangère possèdent la contrainte `deleteOnCascade`, afin de ne pas surcharger la base de données. Par exemple, lorsqu'une conversation est supprimée, cela supprime les messages en cascade.
 
+Plusieurs règles métier garantissent la cohérence des données : un message appartient toujours à une conversation, et une conversation à un seul utilisateur ; le titre d'une conversation est généré automatiquement lors du premier échange ; une conversation et ses paramètres ne sont accessibles qu'à leur propriétaire.
 
 == Documentation du code & gestion des erreurs
-Pour le backend, je fais le minimum en faisant la php doc des fonctions et je documente parfois le code quand je trouve que c'est nécessaire mais en général j'essaie plutôt d'avoir jsute des noms de variables cohérentes je trouve que ça rend le code plus lisible quand il y n'a pas des commentaires partout. Pour le frontend, j'essaie de diviser par "bloc" et je commente ce que ça représente.
+Pour le backend, je fais le minimum en faisant la PHPDoc des fonctions et je documente parfois le code quand je trouve que c'est nécessaire, mais en général j'essaie plutôt d'avoir juste des noms de variables cohérents : je trouve que ça rend le code plus lisible quand il n'y a pas des commentaires partout. Pour le frontend, j'essaie de diviser par « bloc » et je commente ce que ça représente.
 
 Les entrées utilisateur sont validées dans les contrôleurs via `$request->validate(...)`, qui rejette toute requête mal formée avant traitement. L'accès aux conversations est protégé par `abort_unless($conversation->user_id === auth()->id(), 403)`, garantissant qu'un utilisateur ne peut consulter ou supprimer que ses propres conversations. Les valeurs potentiellement absentes (comme le niveau d'insanité d'une conversation fraîchement créée) sont sécurisées par des valeurs par défaut.
 
-les erreurs sont gérés,ar exemple quand un utilisatuer utilise un modele non disponible ou trop de tokesn ça fait un message en rouge //todo completer
-//TODO compléter avec extraits de code annotés vérifier ce qui'l y a écrit en haut
+Les erreurs de l'API sont également gérées. Quand un utilisateur utilise un modèle indisponible ou dépasse la limite de tokens, le serveur émet le message d'erreur préfixé par `[ERROR]` dans le flux. Côté Vue, je détecte ce préfixe et j'affiche une bulle rouge claire au lieu d'une bulle vide, en précisant à l'utilisateur d'essayer un autre modèle. Aucun message vide n'est alors stocké en base, ce qui évite de polluer l'historique.
+
+#figure(
+  image("/docs/images/error.png"),
+  caption: [Gestion des erreurs.],
+)
 
 = Fonctionnalités implémentées
 == Fonctionnalités obligatoires
 === Sélecteur de modèles
-un select en haut de la convertsation permet de chosir son modèle  pour la conversation courante, un autre select dans instructions personnalisées peremet de chosiri son ia favorite lordque ouvre un nouvea chat
+Un `select` en haut de la conversation permet de choisir son modèle pour la conversation courante. Un autre `select`, dans les instructions personnalisées, permet de choisir son IA favorite pour les nouveaux chats.
+
+#figure(
+  image("/docs/images/select.png"),
+  caption: [Selecteur de model.],
+)
 === Historique + titre auto
-L'application se divise en discussions qui ont chacun leurs messages propres ce qui peremt de générer le fil de discussion à l'aide la bdd
-//TODO ajouter code géénration titre
+L'application se divise en discussions qui ont chacune leurs messages propres, ce qui permet de générer le fil de discussion à l'aide de la base de données. Le titre est généré automatiquement au premier échange, à partir du seul message de l'utilisateur, avec un petit modèle rapide (`gemini-2.5-flash-lite`) afin de réduire la latence et le coût en tokens car j'utilisais le même modèle que l'utilisateur précedemment mais ça devenait onéreux.
+
 === Streaming
 La réponse de l'IA est affichée en temps réel grâce aux #glossaire(<glossaire:sse>, "Server-Sent Events") (SSE) plutôt qu'à des WebSockets : la communication étant unidirectionnelle (le serveur envoie les jetons au client, sans dialogue bidirectionnel), les SSE sont plus simples et suffisants. Côté Laravel, la réponse est renvoyée via `response()->stream()`, qui émet le contenu jeton par jeton. Côté Vue, le hook `useStream` consomme ce flux et met à jour l'affichage progressivement. Une fois le flux terminé, la réponse complète est stockée en base et le titre est généré si nécessaire.
+
 === Instructions personnalisées
-Comme vu précedemment nous pouvons chooisir le ton, l'utilisation d'emojis ainsi que la longueur des réponses
+Comme vu précédemment, nous pouvons choisir le ton, l'utilisation d'emojis ainsi que la longueur des réponses.
 
 == Fonctionnalités supplémentaires
-- On peut choisir l'IA favorite par discussion et par utilisateur
-- L'IA a un comportement qui évolue en fonction de la longueur de la discussion
--
-//TODO ajouter fonctionnalités que j'ai fait en plus genre tests ? et seeder + factory ?
-
+- On peut choisir l'IA favorite par discussion *et* par utilisateur.
+- L'IA a un comportement qui évolue en fonction de la longueur de la discussion (le système d'insanité).
+- La gestion des erreurs affiche un message clair quand un modèle échoue plutôt qu'une bulle vide.
+- Des seeders et factories peuplent la base avec des conversations de test, dont le niveau d'insanité correspond au nombre de messages, comme dans l'application réelle.
 
 = Difficultés rencontrées
 J'ai tenu un journal de tout ce que j'ai fait dans `docs/tutorial.md` ; la plupart des difficultés peuvent y être consultées.
@@ -345,26 +356,37 @@ J'ai voulu ajouter la génération d'images en commençant par logger la répons
 
 En voulant trier les conversations par dernière activité dans la sidebar (la plus récente en haut), j'avais trié par `updated_at` de la table `conversations`. Seulement, ce champ ne se mettait jamais à jour : quand on envoie un message, c'est la table `messages` qui change, pas `conversations`. Le tri ne fonctionnait donc pas du tout. J'ai découvert la propriété `$touches` d'Eloquent : en ajoutant `protected $touches = ['conversation']` dans le modèle `Message`, chaque création de message met automatiquement à jour le `updated_at` de sa conversation parente. C'est une ligne de code, mais ça m'a demandé de comprendre que les timestamps Eloquent n'ont pas de propagation automatique entre tables liées — il faut l'expliciter.
 
-Retirer les éléments de base du starter kit a été plus compliqué que prévu. Le kit Laravel installe par défaut une navbar, une sidebar, des pages de settings, un dashboard et toute une structure de layout que je ne voulais pas. Le problème c'est que tout est interconnecté : supprimer la navbar cassait le layout, supprimer le dashboard cassait des redirections, et des composants comme `AppHeader.vue` ou `AppSidebar.vue` référençaient des routes qui n'existaient plus. Il a fallu comprendre comment le resolver de layout dans `app.ts` fonctionnait pour pouvoir dire "les pages `Ask/` et `auth/` n'utilisent pas le layout du kit", et tracer toutes les redirections vers `/dashboard` qui traînaient dans des fichiers comme `PasskeyVerify.vue` ou `routes/index.ts`.
+Retirer les éléments de base du starter kit a été plus compliqué que prévu. Le kit Laravel installe par défaut une navbar, une sidebar, des pages de settings, un dashboard et toute une structure de layout que je ne voulais pas. Le problème c'est que tout est interconnecté : supprimer la navbar cassait le layout, supprimer le dashboard cassait des redirections, et des composants comme `AppHeader.vue` ou `AppSidebar.vue` référençaient des routes qui n'existaient plus. Il a fallu comprendre comment le resolver de layout dans `app.ts` fonctionnait pour pouvoir dire « les pages `Ask/` et `auth/` n'utilisent pas le layout du kit », et tracer toutes les redirections vers `/dashboard` qui traînaient dans des fichiers comme `PasskeyVerify.vue` ou `routes/index.ts`.
 
+Enfin, j'avais deux services distincts qui parlaient à OpenRouter : `SimpleAskService`, que j'avais écrit moi-même pour les appels classiques (et qui sert maintenant à générer les titres), et `SimpleAskStreamService`, que j'ai dû adapter à partir du code du cours pour gérer le streaming. Ce dernier, je ne le comprenais pas bien au début. Une fois les deux services fonctionnels, je me suis rendu compte qu'ils partageaient beaucoup de code identique : le constructeur, la récupération des modèles, la construction du system prompt. J'ai donc créé une classe parente abstraite, `BaseAskService`, qui regroupe tout ce qui est commun, et mes deux services en héritent désormais. On pourrait se dire que le SimpleAskService est devenu inutile mais je l'utilise encore pour génerer le titre.
 
 = Tests
-//TODO faire test
+J'ai écrit des tests de fonctionnalités (Feature tests) avec Pest, qui vérifient les points les plus sensibles de l'application :
+- l'accès à `/ask` redirige vers la page de connexion pour un visiteur non authentifié, et renvoie une réponse correcte pour un utilisateur connecté ;
+- un utilisateur peut consulter et supprimer ses propres conversations, mais reçoit une erreur 403 s'il tente d'accéder à celle d'un autre ;
+- la suppression d'une conversation supprime aussi ses messages en cascade, ce qui valide directement la contrainte `cascadeOnDelete` ;
+- la mise à jour des instructions personnalisées enregistre bien les paramètres en base.
+
+Je n'ai pas testé l'envoi réel d'un message, car cela demanderait de simuler (« mocker ») l'API OpenRouter, ce qui dépassait le cadre de ces tests.
+#figure(
+  image("/docs/images/test.png"),
+  caption: [Résultat des tests.],
+)
 
 = Utilisation de l'IA
 - *Correction* orthographe et syntaxe du rapport, du README et du tutoriel. J'écris tout moi-même, puis je demande à l'IA de corriger en gardant mes tournures de phrases, et je vérifie après.
 - *Tutoriels* : quand il y a quelque chose que je ne sais pas faire, je lui demande de me faire un tutoriel sans donner les réponses ; je lui demande d'attendre mon code pour validation à chaque étape.
 - *Adaptation du code* : j'avais fait tout le contrôleur moi-même, mais lors de l'adaptation pour le streaming je ne comprenais pas grand-chose, alors je l'ai utilisé pour m'aider à adapter le code du cours dans mon contrôleur, puis j'ai modifié ce contrôleur pour comprendre.
-- *Tests* : j'ai entièrement fait les tests par IA.
+- *Tests* : j'ai fait les tests par IA, puis je les ai relus et déplacés au bon endroit pour qu'ils passent.
 - *Tailwind* : le Tailwind a également été fait par IA ; je modifiais juste quelques tailles et couleurs par la suite.
 - *Vue* : il m'a grandement aidé à trouver les balises et paramètres pour obtenir ce que je voulais.
 
 = Réflexion, améliorations & conclusion
-Actuellement, à chaque conversation je recharge la page en changeant la route parce que c'était l'architecture de base à laquelle j'avais pensé, mais ça cause des problèmes de reload surtout à partir d'une nouvelle discussion ce qui est un peu désagréable, je pourrais à la place changer le contenu direct des choses avec des composants par exemple (cest ptet à ca que ça sert inertia et vue //TODO vérifier).
+Actuellement, à chaque message je recharge la page en changeant la route, parce que c'était l'architecture de base à laquelle j'avais pensé. Mais ça cause des petits problèmes de rechargement, surtout au démarrage d'une nouvelle discussion, ce qui est un peu désagréable. Je pourrais à la place changer directement le contenu via la réactivité de Vue, sans recharger toute la page — c'est probablement à cela que servent réellement Inertia et Vue, et ce serait un bon axe d'amélioration.
 
-Ce projet m'a permis d'apprendre à utiliser un framework web complet, d'approfondir mes connaissances des requêtes HTTP vues dans le cours de réseau, et de mieux comprendre l'utilisation des routes et d'un ORM.
-.
-En conclusion, ce projet m'a fait progresser autant sur la conception d'une base de données relationnelle cohérente que sur le développement front-end et l'intégration d'une API d'IA en streaming.
+Avec plus de temps, j'aimerais aussi exploiter la vision (analyse d'images envoyées par l'utilisateur) et ajouter d'autres effets liés à la folie, comme une photo de profil qui se déforme au fil de la conversation.
+
+Ce projet m'a permis d'apprendre à utiliser un framework web complet, d'approfondir mes connaissances des requêtes HTTP vues dans le cours de réseau, et de mieux comprendre l'utilisation des routes et d'un ORM. En conclusion, il m'a fait progresser autant sur la conception d'une base de données relationnelle cohérente que sur le développement front-end et l'intégration d'une API d'IA en streaming.
 
 == Glossaire
 #table(
