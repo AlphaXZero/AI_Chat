@@ -274,11 +274,16 @@ La réponse de l'IA est affichée en temps réel grâce aux #glossaire(<glossair
 - L'IA a un comportement qui évolue en fonction de la longueur de la discussion
 //TODO ajouter fonctionnalités dans le TODO du README
 
-= Difficultés rencontrées
-J'ai voulu ajouter la génération d'images en commencant par log la reponse à la requête pour car ça manquait de précision sur openrouter mais je ne pouvais pas faire de reqêtes même avec le modèle le plus économiuqe, ça me sortait la limite de tokens. J'ai donc abandonné l'idée
 
-J'ai tenu un journal de tout ce que j'ai fait dans `docs/tutorial.md` ; la plupart des difficultés peuvent y être consultées, mais en voici un exemple.
-//TODO ajouter le bouton pour supprimer
+= Difficultés rencontrées
+J'ai tenu un journal de tout ce que j'ai fait dans `docs/tutorial.md` ; la plupart des difficultés peuvent y être consultées.
+
+J'ai voulu ajouter la génération d'images en commençant par logger la réponse à la requête car ça manquait de précision sur OpenRouter, mais je ne pouvais pas faire de requêtes même avec le modèle le plus économique, ça me sortait la limite de tokens. J'ai donc abandonné l'idée.
+
+En voulant trier les conversations par dernière activité dans la sidebar (la plus récente en haut), j'avais trié par `updated_at` de la table `conversations`. Seulement, ce champ ne se mettait jamais à jour : quand on envoie un message, c'est la table `messages` qui change, pas `conversations`. Le tri ne fonctionnait donc pas du tout. J'ai découvert la propriété `$touches` d'Eloquent : en ajoutant `protected $touches = ['conversation']` dans le modèle `Message`, chaque création de message met automatiquement à jour le `updated_at` de sa conversation parente. C'est une ligne de code, mais ça m'a demandé de comprendre que les timestamps Eloquent n'ont pas de propagation automatique entre tables liées — il faut l'expliciter.
+
+Retirer les éléments de base du starter kit a été plus compliqué que prévu. Le kit Laravel installe par défaut une navbar, une sidebar, des pages de settings, un dashboard et toute une structure de layout que je ne voulais pas. Le problème c'est que tout est interconnecté : supprimer la navbar cassait le layout, supprimer le dashboard cassait des redirections, et des composants comme `AppHeader.vue` ou `AppSidebar.vue` référençaient des routes qui n'existaient plus. Il a fallu comprendre comment le resolver de layout dans `app.ts` fonctionnait pour pouvoir dire "les pages `Ask/` et `auth/` n'utilisent pas le layout du kit", et tracer toutes les redirections vers `/dashboard` qui traînaient dans des fichiers comme `PasskeyVerify.vue` ou `routes/index.ts`.
+
 
 = Tests
 //TODO faire test

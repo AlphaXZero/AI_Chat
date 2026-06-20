@@ -1,4 +1,4 @@
-@startuml Normal Chat
+@startuml Normal_Chat
 class User {
   id: int
   name: string
@@ -29,6 +29,6 @@ class Message {
   created_at: timestamp
 }
 User "1" -- "0..*" Conversation : has >
-User "1" -- "0..*" AiSetting : has settings >
+User "1" -- "0..*" AiSetting : configures >
 Conversation "1" -- "1..*" Message : is made of >
 @enduml

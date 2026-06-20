@@ -23,14 +23,14 @@ const props = defineProps<Props>();
 const { verify, isLoading, error, isSupported } = usePasskeyVerify({
     ...(props.routes
         ? {
-              routes: {
-                  options: props.routes.options.url,
-                  submit: props.routes.submit.url,
-              },
-          }
+            routes: {
+                options: props.routes.options.url,
+                submit: props.routes.submit.url,
+            },
+        }
         : {}),
     onSuccess: (response) => {
-        router.visit(response.redirect ?? '/dashboard');
+        router.visit(response.redirect ?? '/ask');
     },
 });
 </script>
@@ -38,13 +38,7 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
 <template>
     <div v-if="isSupported">
         <div class="grid gap-2">
-            <Button
-                type="button"
-                variant="outline"
-                class="w-full"
-                @click="verify"
-                :disabled="isLoading"
-            >
+            <Button type="button" variant="outline" class="w-full" @click="verify" :disabled="isLoading">
                 <Spinner v-if="isLoading" />
                 <KeyRound v-else class="h-4 w-4" />
                 {{

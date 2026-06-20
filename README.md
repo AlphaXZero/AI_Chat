@@ -1,64 +1,68 @@
-# Generic AI Chat
+# Chat Normal
 
-This project is a chat application (in the spirit of ChatGPT) dedicated to learning Laravel. Ask your questions, get explanations, and keep the history of your conversations so you can pick up right where you left off.
+A Laravel-based chat application with a twist: the AI starts perfectly sane, but the longer you talk to it, the more it descends into madness — à la Lovecraft. Watch the interface transform as the AI loses its mind.
 
-This project also serves as a learning resource: it's built step by step, and each step is documented in [`docs/tutorial.md`](docs/tutorial.md) so it can be rebuilt from scratch anytime.
+This project also serves as a personal learning resource: it's built step by step, and each step is documented in [`docs/tutorial.md`](docs/tutorial.md) so it can be rebuilt from scratch anytime.
+
+## Features
+
+- **Streaming responses** — answers appear token by token as they are generated
+- **Conversation history** — all exchanges are stored in the database and resumable at any time
+- **Auto-generated titles** — each conversation gets a short title generated from the first message
+- **Model selector** — choose any model available on OpenRouter
+- **Custom instructions** — configure the assistant's tone, emoji usage, response length, and personal shortcuts (`/command` → expanded instruction)
+- **Favorite model** — set a default model per conversation or globally in settings
+- **Progressive insanity** — the AI's behaviour and the UI both evolve with each exchange: the title shifts from "CHAT NORMAL" to "CHAT ANORMAL", a red vignette creeps in, and the background eventually breaks into a glitched checkerboard
 
 ## TO DO list
 
-- [X] LLM API integration via [OpenRouter](https://openrouter.ai)
-- [ ] update readme
+- [x] LLM API integration via OpenRouter
+- [x] update readme
 - [x] error manage
-- [x] generate title avec claude 3.5 haiku, bug ? only do with question sent by user for better performance
-- [x] verify ai settinfs default
-- [ ] change settings and tittle settings
-- [ ] favorite color in settings to change the color
-- [ ] refactor script index
-- [ ] adding favorite IA in modal settings
-- [ ] adapt style on other pages
-- [ ] change the theme when become crazy in more lovercraftian theme
-- [ ] normal title wich transforms in anormal more and more when reaching 5/5 insanity
-- [ ] changing bg more and more to be more lovecraftia
-- [ ] redirect when suppr + change alert
-- [ ] make seeder and factory
-- [ ] merge services
-- [ ] update homepage
-- [ ] ceck vue
-- [ ] add conversatoin delete
-- [ ] avoid scrolling history while scrolling
-- [ ] scroll to bottom when new message is received or when the user open a old conversation
-- [ ]  update favorite ia with @change on select
-- [ ] show the user message before response instead of user message and chat response simultanusly
-- [ ] enter key to chat
-- [ ] multiple systems prompts
-- [ ] handle error
-- [ ] profile picture becoming altered with every prompts
-- [ ] ia becoming bored and angry with every prompts
-- [ ] Change API url ?
-- [ ] auto scroll when 
-- [ ] enter to confirm question
-- [ ] navbar history
-- [ ] typerarea below questions
-- [ ] Update simpleaskservice (favorite ia) ?
+- [x] generate title avec gemini-2.5-flash-lite, basé uniquement sur le message user pour de meilleures performances
+- [x] verify ai settings default
+- [x] adding favorite IA in modal settings
+- [x] adapt style on other pages
+- [x] change the theme when become crazy (vignette rouge, damier mauve, titre qui rougit)
+- [x] normal title which transforms in anormal more and more when reaching insanity 5+
+- [x] changing bg more and more to be more lovecraftian (reality-broken checkerboard)
+- [x] redirect when suppr + change alert (delete fonctionne mais alert native pas encore remplacée)
+- [ ] make seeder and factory (factories créées, seeders vides)
+- [x] merge services (BaseAskService + héritage)
+- [x] update homepage (Welcome.vue restyled)
+- [x] check vue
+- [x] add conversation delete
+- [x] avoid scrolling history while scrolling (auto-scroll implémenté)
+- [x] scroll to bottom when new message is received or when the user open a old conversation
+- [x] update favorite ia with @change on select (via AiSettingsModal)
+- [x] show the user message before response (pendingUserMessage)
+- [x] enter key to chat
+- [x] handle error (bulle rouge + détection [ERROR] dans le flux)
+- [x] ia becoming bored and angry with every prompts
+- [x] Change API url
+- [x] auto scroll
+- [x] enter to confirm question
+- [x] navbar history (sidebar avec liste des conversations)
+- [x] textarea below questions (zone de saisie fixe en bas)
 - [x] check route in routes/web.php
 - [ ] look further js/components/MarkdownRenderer.vue
-- [ ] fix warning simpleaskservice
-- [ ] look further the contoler
-- [ ] Mark down answer (course)
-- [ ] Conversational chat interface
-- [ ] Conversation history (stored in the database)
-- [ ] Resume and manage past conversations
-- [ ] Streaming responses (rendered as they are generated)
-
+- [x] fix warning simpleaskservice
+- [x] look further the controller
+- [x] Markdown answer
+- [x] Conversational chat interface
+- [x] Conversation history (stored in the database)
+- [x] Resume and manage past conversations
+- [x] Streaming responses (rendered as they are generated)
 
 ## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Back-end | Laravel (PHP 8.2+) |
-| Front-end | Vue 3 + Inertia.js |
+| Back-end | Laravel 13.13 (PHP 8.2+) |
+| Front-end | Vue 3.5 + Inertia.js (Composition API) |
 | Build | Vite |
-| Database | MySQL / SQLite |
+| Database | SQLite (local) / PostgreSQL (production) |
+| Styling | Tailwind CSS + shadcn-vue |
 | AI | OpenRouter API |
 | Testing | Pest |
 
@@ -75,8 +79,7 @@ Clone the repository and install the dependencies:
 
 ```bash
 git clone <repository-url>
-cd laralearn
-
+cd chat-normal
 composer install
 npm install
 ```
@@ -100,7 +103,17 @@ Configure the database in `.env`, then run the migrations:
 php artisan migrate
 ```
 
+## Running the project
 
-## 📖 Documentation
+### Standard method
 
-The full step-by-step tutorial explaining how the project is built lives in [`docs/tutorial.md`](docs/tutorial.md).
+```bash
+php artisan serve   # back-end
+npm run dev         # front-end (second terminal)
+```
+
+### Quick method
+
+```bash
+composer run dev
+```
