@@ -16,14 +16,28 @@ class AskController extends Controller
     ) {
     }
 
+    public const TITLE_MODEL = 'google/gemini-2.5-flash-lite';
+
+    /**
+     * Return a blank page, with a fresh new chat.
+     *
+     * @return \Inertia\Response the chat page with no active conversation
+     */
     public function index()
     {
         return Inertia::render('Ask/Index', [
             'models' => $this->askService->getModels(),
-            'selectedModel' => $this->askService::DEFAULT_MODEL,
+            'selectedModel' => auth()->user()->favorite_ia ?? $this->askService::DEFAULT_MODEL,
         ]);
     }
 
+    /**
+     * Handle an incoming chat message: store it, stream the AI response,
+     * generate the title on the first exchange, and raise the insanity level.
+     *
+     * @param Request $request The HTTP request containing the message, model and optional conversation id
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse The streamed AI response
+     */
     public function ask(Request $request)
     {
         $validated = $request->validate([
@@ -32,7 +46,6 @@ class AskController extends Controller
             'conversation_id' => 'nullable|exists:conversations,id',
         ]);
 
-        // Remplace un éventuel raccourci (/command) par son instruction
         $message = $validated['message'];
         foreach ($request->user()->shortcut ?? [] as $shortcut) {
             $trigger = '/' . $shortcut['command'];
@@ -42,7 +55,6 @@ class AskController extends Controller
             }
         }
 
-        // Récupère la conversation existante ou en crée une nouvelle
         $conversation = !empty($validated['conversation_id'])
             ? $request->user()->conversations()->findOrFail($validated['conversation_id'])
             : $request->user()->conversations()->create([
@@ -50,14 +62,27 @@ class AskController extends Controller
                 'favorite_ia' => $validated['model'],
             ]);
 
-        // Mémorise le modèle choisi sur l'utilisateur
-        $request->user()->update(['favorite_ia' => $validated['model']]);
-
-        // Stocke le message de l'utilisateur
         $conversation->messages()->create([
             'role' => 'user',
             'content' => $message,
         ]);
+
+        if ($conversation->title === null) {
+            try {
+                $title = $this->askService->sendMessage(
+                    messages: [['role' => 'user', 'content' => $message]],
+                    model: self::TITLE_MODEL,
+                    system_prompt_file: 'prompts.generate_title',
+                );
+            } catch (\Throwable) {
+                $title = $this->askService->sendMessage(
+                    messages: [['role' => 'user', 'content' => $message]],
+                    model: $validated['model'],
+                    system_prompt_file: 'prompts.generate_title',
+                );
+            }
+            $conversation->update(['title' => trim($title)]);
+        }
 
         // Construit l'historique pour l'API
         $formated_history = $conversation->messages()
@@ -69,33 +94,20 @@ class AskController extends Controller
         return response()->stream(
             function () use ($formated_history, $validated, $conversation) {
                 // Continue le traitement même si le client ferme la connexion
-                // (sinon la génération du titre ci-dessous serait interrompue)
                 ignore_user_abort(true);
 
-                // Stream la réponse en direct et récupère le texte complet
                 $fullResponse = $this->streamService->streamToOutput(
                     messages: $formated_history,
                     model: $validated['model'],
                     insanity: $conversation->insanity ?? 0,
                 );
 
-                // Stocke la réponse de l'assistant
                 $conversation->messages()->create([
                     'role' => 'assistant',
                     'content' => $fullResponse,
                 ]);
 
-                // Génère le titre au premier échange
-                if ($conversation->title === null) {
-                    $title = $this->askService->sendMessage(
-                        messages: [...$formated_history, ['role' => 'assistant', 'content' => $fullResponse]],
-                        model: $validated['model'],
-                        system_prompt_file: 'prompts.generate_title',
-                    );
-                    $conversation->update(['title' => trim($title)]);
-
-                }
-                $conversation->increment("insanity");
+                $conversation->increment('insanity');
             },
             headers: [
                 'Content-Type' => 'text/plain; charset=utf-8',

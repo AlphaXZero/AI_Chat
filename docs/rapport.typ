@@ -165,7 +165,7 @@ Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste 
 - ORM Eloquent : l'#glossaire(<glossaire:orm>, "ORM") natif de Laravel. Chaque table possède un modèle, ce qui permet aussi de gérer les relations entre les tables. Il permet également de faire de l'#glossaire(<glossaire:eager_loading>, "eager loading").
 
 === Frontend
-- Vue 3.5.35
+- Vue 3.5.35, utilisé avec la #glossaire(<glossaire:composition_api>, "Composition API") (`<script setup>`)
 - Inertia.js : permet de faire des pages dynamiques sans devoir recharger toute la page
 - Tailwind
 - shadcn-vue : composants d'interface préstylisés
@@ -177,7 +177,6 @@ Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste 
 == Thème choisi
 Comme son titre l'indique, c'est juste un chat IA normal qui répond aux questions des utilisateurs. Seulement, plus on interagit avec lui, plus il sombre dans la folie, comme le ferait un personnage lovecraftien. Ainsi, au fil de la discussion, il devient incohérent, oublie ou rajoute des mots, et divague. L'interface change également en réponse : le titre passe de « Chat Normal » à « Chat Anormal », un gradient rouge s'applique sur les bords pour créer un effet tunnel, et si l'on parle assez longtemps, le fond change de couleur pour donner une impression de bug.
 //TODO 3 captures pour interface
-
 == Personnalisation de l'IA
 Un bouton en bas à gauche permet de configurer, à l'aide d'une modale, la façon dont l'IA nous répond :
 - *Emojis* : si l'on veut des réponses avec des smileys
@@ -188,6 +187,13 @@ Dans cette même modale, on peut également définir des raccourcis personnalisa
 Par exemple : `/corrige` = « corrige-moi l'orthographe et la syntaxe » \
 Ainsi, lorsque l'utilisateur écrira `/corrige jadorre lé fruit`, le site convertira le `/corrige` et l'assistant corrigera la phrase.
 //TODO image configuration + lien
+
+== Personnalité de l'IA & instructions système
+La personnalité de l'IA est entièrement pilotée par un system prompt construit dynamiquement selon le niveau d'insanité de la conversation. Plus ce niveau monte, plus les instructions données à l'IA l'invitent à incarner la folie. Le prompt insiste sur le fait que l'IA doit *incarner* la folie plutôt que la jouer, à la manière d'un narrateur lovecraftien dont l'esprit se désintègre. Voici un extrait des paliers :
+// TODO image du system prompt +expliquer
+Le profil configuré par l'utilisateur (émojis, ton, longueur) est injecté dans ce même prompt, ce qui permet de combiner personnalité folle et préférences personnelles.
+// TODO montrer suite
+
 
 == Branding
 J'ai grandement utilisé Claude pour le Tailwind ; il m'a aidé à améliorer les vues. On se retrouve ainsi avec un thème assez sobre, qui se transforme ensuite en une interface chargée marquant la folie de l'IA. J'utilise les icônes sobres fournies par Laravel.
@@ -220,16 +226,18 @@ La relation est `Conversation "1" --> "1..*" Message` car une conversation n'est
 Elle permet de stocker les images avec une URL (en base64) et un placeholder si l'image ne charge pas.
 //TODO vérifier puis mettre à jour quand en place
 *Clé étrangère* vers `conversation`.
-La relation est `Conversation "1" --> "0..*" Image` car une conversation n'est pas obligée d'avoir une image.
+La relation est `Message "1" --> "0..*" Image` car une conversation n'est pas obligée d'avoir une image.
 
 == Contraintes
 Toutes les tables ayant une clé étrangère possèdent la contrainte `deleteOnCascade`, afin de ne pas surcharger la base de données. Par exemple, lorsqu'une conversation est supprimée, cela supprime les messages en cascade.
 //TODO ajouter screen + glossaire pour delete on cascade
 
 == Documentation du code & gestion des erreurs
+Pour le backend, je fais le minimum en faisant la php doc des fonctions et je documente parfois le code quand je trouve que c'est nécessaire mais en général j'essaie plutôt d'avoir jsute des noms de variables cohérentes je trouve que ça rend le code plus lisible quand il y n'a pas des commentaires partout. Pour le frontend, j'essaie de diviser par "bloc" et je commente ce que ça représente.
+// TODO : exemple conversatoin create pas encessaire
 Les entrées utilisateur sont validées dans les contrôleurs via `$request->validate(...)`, qui rejette toute requête mal formée avant traitement. L'accès aux conversations est protégé par `abort_unless($conversation->user_id === auth()->id(), 403)`, garantissant qu'un utilisateur ne peut consulter ou supprimer que ses propres conversations. Les valeurs potentiellement absentes (comme le niveau d'insanité d'une conversation fraîchement créée) sont sécurisées par des valeurs par défaut.
 //TODO compléter avec extraits de code annotés vérifier ce qui'l y a écrit en haut
-
+//TODO gestion erreur + cpature
 == Diagrammes complémentaires
 //TODO pourquoi pas un séquence mais bon boring en vrai
 
@@ -240,6 +248,7 @@ Les entrées utilisateur sont validées dans les contrôleurs via `$request->val
 === Historique + titre auto
 //TODO capture
 === Streaming
+La réponse de l'IA est affichée en temps réel grâce aux #glossaire(<glossaire:sse>, "Server-Sent Events") (SSE) plutôt qu'à des WebSockets : la communication étant unidirectionnelle (le serveur envoie les jetons au client, sans dialogue bidirectionnel), les SSE sont plus simples et suffisants. Côté Laravel, la réponse est renvoyée via `response()->stream()`, qui émet le contenu jeton par jeton. Côté Vue, le hook `useStream` consomme ce flux et met à jour l'affichage progressivement. Une fois le flux terminé, la réponse complète est stockée en base et le titre est généré si nécessaire.
 //TODO capture
 === Instructions personnalisées
 //TODO capture
@@ -279,4 +288,10 @@ En conclusion, ce projet m'a fait progresser autant sur la conception d'une base
 
   [ORM <glossaire:orm>],
   [Object-Relational Mapper : il permet d'interagir avec la base de données via des objets au lieu d'écrire des requêtes SQL.],
+
+  [Composition API <glossaire:composition_api>],
+  [Manière d'écrire les composants Vue 3 en regroupant la logique par fonctionnalité dans `<script setup>`, par opposition à l'Options API.],
+
+  [SSE <glossaire:sse>],
+  [Server-Sent Events : technologie permettant à un serveur d'envoyer un flux de données au client en temps réel, de manière unidirectionnelle, sur une simple connexion HTTP.],
 )
