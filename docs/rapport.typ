@@ -136,9 +136,30 @@
     outline(title: none, target: figure.where(kind: image))
   }
   pagebreak()
+  show raw.where(block: true): it => {
+    set text(size: 9pt)
+    block(
+      fill: luma(248),
+      inset: (x: 1.2em, y: 0.9em),
+      radius: 4pt,
+      width: 100%,
+      stroke: (left: 3pt + luma(30)),
+      it,
+    )
+  }
+
+  show raw.where(block: false): it => {
+    box(
+      fill: luma(240),
+      inset: (x: 0.3em, y: 0.15em),
+      radius: 2pt,
+      it,
+    )
+  }
 
   body
 }
+
 
 // ============================================================
 //  CONFIGURATION DU DOCUMENT
@@ -212,19 +233,61 @@ Ainsi, lorsque l'utilisateur écrira `/corrige jadorre lé fruit`, le site conve
 
 == Personnalité de l'IA & instructions système
 La personnalité de l'IA est entièrement pilotée par un system prompt construit dynamiquement selon le niveau d'insanité de la conversation. Plus ce niveau monte, plus les instructions données à l'IA l'invitent à incarner la folie. Le prompt insiste sur le fait que l'IA doit *incarner* la folie plutôt que la jouer, à la manière d'un narrateur lovecraftien dont l'esprit se désintègre. Voici un extrait des paliers :
-// TODO image du system prompt +expliquer
+```
+Tu es un assistant de chat. La date et l'heure actuelle est le {{ $now }}.
+Tu es actuellement utilisé par {{ $user }}.
+
+Tu deviens fou au fil de la conversation. Tu es actuellement à {{ $insanity }}/5 niveau de folie.
+RÈGLE ABSOLUE : tu incarnes la folie, tu ne la joues pas. Pas de didascalies, pas d'astérisques, pas de "*regarde autour de lui*". La folie doit transparaître dans ta prose elle-même — dans ta syntaxe, tes
+associations d'idées, ta ponctuation, ton vocabulaire — comme un narrateur lovecraftien dont l'esprit se désintègre sous nos yeux pendant qu'il écrit.
+
+@if ($insanity === 0)
+    Tu es parfaitement lucide, cohérent et professionnel. Aucun signe de folie.
+@elseif ($insanity === 1)
+    Tu es presque normal. Mais une pensée parasite s'immisce parfois — un mot qui n'a rien à faire là,une association fugace que tu ne remarques pas toi-même. Le lecteur la voit, pas toi. Continue comme si de rien n'était.
+@elseif ($insanity === 2)
+  xxx
+@elseif ($insanity === 3)
+  xxx
+@elseif ($insanity === 4)
+  xxx
+@elseif ($insanity >= 5 && $insanity <= 7)
+  xxx
+@elseif ($insanity > 7)
+  xxx
+@endif
+```
 Le profil configuré par l'utilisateur (émojis, ton, longueur) est injecté dans ce même prompt, ce qui permet de combiner personnalité folle et préférences personnelles.
-// TODO montrer suite
+```
+@if (($profile['emojis'] ?? null) === 'beaucoup')
+    Utilise beaucoup d'émojis dans tes réponses.
+@elseif(($profile['emojis'] ?? null) === 'peu')
+    Utilise quelques émojis, avec parcimonie.
+@elseif(($profile['emojis'] ?? null) === 'non')
+    N'utilise aucun émoji.
+@endif
+Prends un ton {{ $profile['tone'] ?? 'neutre' }}.
+@if (($profile['length'] ?? null) === 'normal')
+    Réponds avec une longueur normale.
+@elseif(($profile['length'] ?? null) === 'detaille')
+    Réponds avec beaucoup de détails.
+@elseif(($profile['length'] ?? null) === 'concis')
+    Sois le plus concis possible.
+@endif
+
+```
 
 
 == Branding
 J'ai grandement utilisé Claude pour le Tailwind ; il m'a aidé à améliorer les vues. On se retrouve ainsi avec un thème assez sobre, qui se transforme ensuite en une interface chargée marquant la folie de l'IA. J'utilise les icônes sobres fournies par Laravel.
-//TODO lien avec image en haut
 
 = Modèle de données & architecture
 == Diagramme de classe
-//TODO diagramme
 
+#figure(
+  image("/docs/Normal_Chat.svg"),
+  caption: [Diagramme de classe.],
+)
 == Tables et relations
 === Table User
 La table `user` contient les différentes informations de connexion, le nom (également utilisé par le system prompt), l'IA favorite (pour choisir l'IA par défaut lors d'un nouveau chat) et enfin les raccourcis configurables. Ceux-ci ont une structure JSON : comme c'est toujours une structure `{ "command": "...", "instruction": "..." }`, c'est facilement maintenable et cela m'évite de créer une table annexe.
@@ -246,33 +309,33 @@ La relation est `Conversation "1" --> "1..*" Message` car une conversation n'est
 
 == Contraintes
 Toutes les tables ayant une clé étrangère possèdent la contrainte `deleteOnCascade`, afin de ne pas surcharger la base de données. Par exemple, lorsqu'une conversation est supprimée, cela supprime les messages en cascade.
-//TODO ajouter screen + glossaire pour delete on cascade
+
 
 == Documentation du code & gestion des erreurs
 Pour le backend, je fais le minimum en faisant la php doc des fonctions et je documente parfois le code quand je trouve que c'est nécessaire mais en général j'essaie plutôt d'avoir jsute des noms de variables cohérentes je trouve que ça rend le code plus lisible quand il y n'a pas des commentaires partout. Pour le frontend, j'essaie de diviser par "bloc" et je commente ce que ça représente.
-// TODO : exemple conversatoin create pas encessaire
+
 Les entrées utilisateur sont validées dans les contrôleurs via `$request->validate(...)`, qui rejette toute requête mal formée avant traitement. L'accès aux conversations est protégé par `abort_unless($conversation->user_id === auth()->id(), 403)`, garantissant qu'un utilisateur ne peut consulter ou supprimer que ses propres conversations. Les valeurs potentiellement absentes (comme le niveau d'insanité d'une conversation fraîchement créée) sont sécurisées par des valeurs par défaut.
+
+les erreurs sont gérés,ar exemple quand un utilisatuer utilise un modele non disponible ou trop de tokesn ça fait un message en rouge //todo completer
 //TODO compléter avec extraits de code annotés vérifier ce qui'l y a écrit en haut
-//TODO gestion erreur + cpature
-== Diagrammes complémentaires
-//TODO pourquoi pas un séquence mais bon boring en vrai
 
 = Fonctionnalités implémentées
 == Fonctionnalités obligatoires
 === Sélecteur de modèles
-//TODO capture
+un select en haut de la convertsation permet de chosir son modèle  pour la conversation courante, un autre select dans instructions personnalisées peremet de chosiri son ia favorite lordque ouvre un nouvea chat
 === Historique + titre auto
-//TODO capture
+L'application se divise en discussions qui ont chacun leurs messages propres ce qui peremt de générer le fil de discussion à l'aide la bdd
+//TODO ajouter code géénration titre
 === Streaming
 La réponse de l'IA est affichée en temps réel grâce aux #glossaire(<glossaire:sse>, "Server-Sent Events") (SSE) plutôt qu'à des WebSockets : la communication étant unidirectionnelle (le serveur envoie les jetons au client, sans dialogue bidirectionnel), les SSE sont plus simples et suffisants. Côté Laravel, la réponse est renvoyée via `response()->stream()`, qui émet le contenu jeton par jeton. Côté Vue, le hook `useStream` consomme ce flux et met à jour l'affichage progressivement. Une fois le flux terminé, la réponse complète est stockée en base et le titre est généré si nécessaire.
-//TODO capture
 === Instructions personnalisées
-//TODO capture
+Comme vu précedemment nous pouvons chooisir le ton, l'utilisation d'emojis ainsi que la longueur des réponses
 
 == Fonctionnalités supplémentaires
 - On peut choisir l'IA favorite par discussion et par utilisateur
 - L'IA a un comportement qui évolue en fonction de la longueur de la discussion
-//TODO ajouter fonctionnalités dans le TODO du README
+-
+//TODO ajouter fonctionnalités que j'ai fait en plus genre tests ? et seeder + factory ?
 
 
 = Difficultés rencontrées
@@ -292,7 +355,7 @@ Retirer les éléments de base du starter kit a été plus compliqué que prévu
 - *Correction* orthographe et syntaxe du rapport, du README et du tutoriel. J'écris tout moi-même, puis je demande à l'IA de corriger en gardant mes tournures de phrases, et je vérifie après.
 - *Tutoriels* : quand il y a quelque chose que je ne sais pas faire, je lui demande de me faire un tutoriel sans donner les réponses ; je lui demande d'attendre mon code pour validation à chaque étape.
 - *Adaptation du code* : j'avais fait tout le contrôleur moi-même, mais lors de l'adaptation pour le streaming je ne comprenais pas grand-chose, alors je l'ai utilisé pour m'aider à adapter le code du cours dans mon contrôleur, puis j'ai modifié ce contrôleur pour comprendre.
-- *Tests* : j'ai entièrement fait les tests par IA ; j'ai fait les seeders et factories moi-même.
+- *Tests* : j'ai entièrement fait les tests par IA.
 - *Tailwind* : le Tailwind a également été fait par IA ; je modifiais juste quelques tailles et couleurs par la suite.
 - *Vue* : il m'a grandement aidé à trouver les balises et paramètres pour obtenir ce que je voulais.
 
