@@ -10,7 +10,7 @@ const props = defineProps({
     favorite_ia: { type: String, default: "" }
 })
 
-const emit = defineEmits(['close', 'updated'])
+const emit = defineEmits(['close'])
 
 // Form holding the assistant profile and the user's custom shortcuts.
 // Falls back to sensible defaults when a profile value is missing.
@@ -29,14 +29,7 @@ const addShortcut = () => form.shortcuts.push({ command: '', instruction: '' })
 const removeShortcut = (index) => form.shortcuts.splice(index, 1)
 
 // Persist the settings, then close the modal on success
-const save = () => {
-    form.patch('/settings/ai', {
-        onSuccess: () => {
-            emit('updated', form.favorite_ia)
-            emit('close')
-        }
-    })
-}
+const save = () => form.patch('/settings/ai', { onSuccess: () => emit('close') })
 </script>
 
 <template>

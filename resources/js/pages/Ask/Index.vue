@@ -21,10 +21,7 @@ const model = ref(props.selectedModel)   // currently selected model
 const pendingUserMessage = ref('')       // user message shown instantly, before reload
 const newConversationId = ref(null)      // id returned by the server for a brand new conversation
 const requestError = ref('')             // error shown when the whole request fails (network/server)
-// update favorite ia in the select when exiting modal
-const updateFavoriteModel = (newModel) => {
-    model.value = newModel
-}
+
 // Template refs for auto-scroll and autofocus
 const messageArea = ref(null)            // scrollable message container
 const textarea = ref(null)               // input field
@@ -321,7 +318,7 @@ const pulseStyle = computed(() => {
 
         <!-- Settings modal -->
         <AiSettingsModal :open="showSettings" :profile="page.props.aiProfile" :shortcuts="page.props.shortcuts"
-            :models="props.models" :favorite_ia="model" @updated="updateFavoriteModel" @close="showSettings = false" />
+            :models="props.models" :favorite_ia="selectedModel" @close="showSettings = false" />
     </div>
 </template>
 
