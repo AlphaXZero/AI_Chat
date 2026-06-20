@@ -4,7 +4,7 @@ import { usePage, Link, Head, router } from '@inertiajs/vue3'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useStream } from '@laravel/stream-vue'
 import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
-import { Plus, Settings, LogOut, X, ArrowUp } from '@lucide/vue'
+import { Plus, Settings, LogOut, X, ArrowUp, AlertTriangle } from '@lucide/vue'
 
 const page = usePage()
 const props = defineProps({
@@ -20,6 +20,7 @@ const message = ref('')                  // textarea content
 const model = ref(props.selectedModel)   // currently selected model
 const pendingUserMessage = ref('')       // user message shown instantly, before reload
 const newConversationId = ref(null)      // id returned by the server for a brand new conversation
+const requestError = ref('')             // error shown when the whole request fails (network/server)
 
 // Template refs for auto-scroll and autofocus
 const messageArea = ref(null)            // scrollable message container
@@ -39,6 +40,13 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
     // Only the conversation-related props are reloaded: the model list never changes
     // between two messages, so reloading it would be wasted work.
     onFinish: () => {
+        // If the stream ended on an error, keep the error visible and skip the reload,
+        // otherwise the empty assistant message would replace it.
+        if (streamError.value) {
+            pendingUserMessage.value = ''
+            return
+        }
+
         const targetId = newConversationId.value ?? props.conversation?.id
         message.value = ''
         pendingUserMessage.value = ''
@@ -54,14 +62,26 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
     onError: (err) => {
         console.error('Streaming error:', err)
         pendingUserMessage.value = ''
+        requestError.value = "La requête a échoué. Vérifiez votre connexion ou réessayez."
     },
 })
 
-// Streamed text, with the reasoning markers stripped out
+// Error emitted inside the stream by the server (e.g. invalid/unavailable model).
+// The server prefixes such messages with "[ERROR] ".
+const streamError = computed(() => {
+    if (!data.value || !data.value.includes('[ERROR]')) return null
+    return data.value.split('[ERROR]').pop().trim()
+})
+
+// Streamed text, with the reasoning markers stripped out.
+// Returns nothing when the stream carries an error (the error bubble shows instead).
 const streamingContent = computed(() => {
-    if (!data.value) return ''
+    if (!data.value || streamError.value) return ''
     return data.value.replace(/\[REASONING\][\s\S]*?\[\/REASONING\]/g, '').trim()
 })
+
+// Any error to display (request-level or stream-level)
+const displayError = computed(() => requestError.value || streamError.value)
 
 // ─── Auto-scroll ──────────────────────────────────────────────
 // Keep the view pinned to the bottom as new content streams in
@@ -73,6 +93,7 @@ const scrollToBottom = () => {
     })
 }
 watch(streamingContent, scrollToBottom)
+watch(displayError, scrollToBottom)
 watch(() => props.messages, scrollToBottom, { deep: true })
 
 // ─── Lifecycle ────────────────────────────────────────────────
@@ -84,6 +105,7 @@ onMounted(() => {
 // ─── Actions ──────────────────────────────────────────────────
 const submit = () => {
     if (!message.value.trim() || isStreaming.value || isFetching.value) return
+    requestError.value = ''   // clear any previous error before sending
     pendingUserMessage.value = message.value
     const toSend = message.value
     message.value = ''
@@ -95,6 +117,7 @@ const submit = () => {
     scrollToBottom()
     textarea.value?.focus()   // keep focus on the input after sending
 }
+
 
 // Enter sends, Shift+Enter inserts a new line
 const handleKeydown = (e) => {
@@ -245,8 +268,8 @@ const pulseStyle = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Streaming response (only while the stream is active) -->
-                    <div v-if="isStreaming || isFetching" class="flex justify-start">
+                    <!-- Streaming response (only while the stream is active and has no error) -->
+                    <div v-if="(isStreaming || isFetching) && !displayError" class="flex justify-start">
                         <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
                             style="background: #121212; border: 1px solid #1f1f1f">
                             <MarkdownRenderer v-if="streamingContent" :content="streamingContent" />
@@ -258,6 +281,16 @@ const pulseStyle = computed(() => {
                                 <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"
                                     style="animation-delay: 0.3s"></span>
                             </span>
+                        </div>
+                    </div>
+
+                    <!-- Error bubble: shown when the model or the request fails -->
+                    <div v-if="displayError" class="flex justify-start">
+                        <div class="flex max-w-[80%] items-start gap-2 rounded-2xl px-4 py-3 text-sm leading-relaxed"
+                            style="background: #2a1212; border: 1px solid #5a2020; color: #f0a0a0">
+                            <AlertTriangle :size="16" class="mt-0.5 shrink-0" />
+                            <span>Une erreur est survenue : {{ displayError }}. Essayez un autre modèle ou
+                                réessayez.</span>
                         </div>
                     </div>
                 </div>

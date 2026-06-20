@@ -162,7 +162,9 @@ class SimpleAskStreamService extends BaseAskService
             $parsed = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
 
             if (isset($parsed['error'])) {
-                return ['type' => 'error', 'data' => $parsed['error']['message'] ?? 'Unknown error'];
+                $code = $parsed['error']['code'] ?? 'unknown';
+                $msg = $parsed['error']['message'] ?? 'Unknown error';
+                return ['type' => 'error', 'data' => "{$msg} (code: {$code})"];
             }
 
             $delta = $parsed['choices'][0]['delta'] ?? [];
