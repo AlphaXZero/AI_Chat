@@ -8,13 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Message extends Model
 {
     protected $fillable = ['conversation_id', 'role', 'content'];
-protected $touches = ['conversation'];
+    protected $touches = ['conversation'];
     public function conversation()
     {
         return $this->belongsTo(Conversation::class);
-    }
-    public function images()
-    {
-        return $this->hasMany(Image::class);
     }
 }
