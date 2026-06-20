@@ -1,7 +1,7 @@
 <script setup>
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { usePage, Link, Head, router } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useStream } from '@laravel/stream-vue'
 import AiSettingsModal from '@/pages/Ask/AiSettingsModal.vue'
 import { Plus, Settings, LogOut, X, ArrowUp } from '@lucide/vue'
@@ -15,23 +15,33 @@ const props = defineProps({
     error: String,
 })
 
+// ─── Local state ──────────────────────────────────────────────
 const showSettings = ref(false)
-const message = ref('')
-const model = ref(props.selectedModel)
-const pendingUserMessage = ref('')
-const newConversationId = ref(null)
+const message = ref('')                  // textarea content
+const model = ref(props.selectedModel)   // currently selected model
+const pendingUserMessage = ref('')       // user message shown instantly, before reload
+const newConversationId = ref(null)      // id returned by the server for a brand new conversation
 
+// Template refs for auto-scroll and autofocus
+const messageArea = ref(null)            // scrollable message container
+const textarea = ref(null)               // input field
+
+// Current insanity level of the conversation (drives every visual effect below)
 const insanity = computed(() => props.conversation?.insanity ?? 0)
 
+// ─── Streaming ────────────────────────────────────────────────
 const { data, isStreaming, isFetching, send } = useStream('/ask', {
+    // Grab the conversation id from the response header (needed for new conversations)
     onResponse: (response) => {
         const id = response.headers.get('X-Conversation-Id')
         if (id) newConversationId.value = id
     },
+    // Once the stream ends, refresh the page (or navigate to the new conversation)
     onFinish: () => {
         const targetId = newConversationId.value ?? props.conversation?.id
         message.value = ''
         pendingUserMessage.value = ''
+
         if (props.conversation?.id) {
             router.reload()
         } else if (targetId) {
@@ -41,16 +51,37 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
         }
     },
     onError: (err) => {
-        console.error('Erreur streaming:', err)
+        console.error('Streaming error:', err)
         pendingUserMessage.value = ''
     },
 })
 
+// Streamed text, with the reasoning markers stripped out
 const streamingContent = computed(() => {
     if (!data.value) return ''
     return data.value.replace(/\[REASONING\][\s\S]*?\[\/REASONING\]/g, '').trim()
 })
 
+// ─── Auto-scroll ──────────────────────────────────────────────
+// Keep the view pinned to the bottom as new content streams in
+const scrollToBottom = () => {
+    nextTick(() => {
+        if (messageArea.value) {
+            messageArea.value.scrollTop = messageArea.value.scrollHeight
+        }
+    })
+}
+watch(streamingContent, scrollToBottom)
+watch(pendingUserMessage, scrollToBottom)
+watch(() => props.messages, scrollToBottom, { deep: true })
+
+// ─── Lifecycle ────────────────────────────────────────────────
+onMounted(() => {
+    textarea.value?.focus()   // focus the input on page load
+    scrollToBottom()          // start at the bottom of the conversation
+})
+
+// ─── Actions ──────────────────────────────────────────────────
 const submit = () => {
     if (!message.value.trim() || isStreaming.value || isFetching.value) return
     pendingUserMessage.value = message.value
@@ -61,8 +92,10 @@ const submit = () => {
         model: model.value,
         conversation_id: props.conversation?.id ?? null,
     })
+    textarea.value?.focus()   // keep focus on the input after sending
 }
 
+// Enter sends, Shift+Enter inserts a new line
 const handleKeydown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
@@ -73,11 +106,14 @@ const handleKeydown = (e) => {
 const logout = () => router.post('/logout')
 const deleteConversation = (id) => router.delete(`/conversations/${id}`)
 
+// ─── Insanity-driven visual effects ───────────────────────────
+// Opacity of the "A" in (A)NORMAL: invisible when sane, fully shown from level 5
 const aOpacity = computed(() => {
     if (insanity.value >= 5) return 1
     return insanity.value * 0.03
 })
 
+// Title colour: shifts from gold to vivid red as insanity rises (max red at 6)
 const titleColor = computed(() => {
     const i = insanity.value
     if (i <= 0) return '#d4af37'
@@ -89,12 +125,14 @@ const titleColor = computed(() => {
     return '#ff0000'
 })
 
+// Red vignette intensity: barely visible up to level 4, then ramps up
 const ambianceIntensity = computed(() => {
     const i = insanity.value
     if (i <= 4) return i * 0.02
-    return Math.min(0.15 + (i - 4) * 0.15, 2)
+    return Math.min(0.15 + (i - 4) * 0.2, 0.9)
 })
 
+// Vignette pulsing: starts at level 5 and speeds up afterwards
 const pulseStyle = computed(() => {
     if (insanity.value < 5) return {}
     const speed = Math.max(5 - (insanity.value - 5) * 0.5, 1.8)
@@ -106,26 +144,27 @@ const pulseStyle = computed(() => {
 
     <Head title="Chat Normal" />
 
-    <div class="flex overflow-hidden text-slate-100" :class="insanity >= 6 ? 'reality-broken' : 'bg-normal'"
-        style="height: 100vh">
+    <!-- Root: black background normally, broken-reality checkerboard from level 6 -->
+    <div class="flex overflow-hidden text-slate-100 bg-transition"
+        :class="insanity >= 6 ? 'reality-broken' : 'bg-normal'" style="height: 100vh">
 
-        <!-- Couche d'ambiance (vignettage rouge + pulsation) -->
-        <div class="pointer-events-none fixed inset-0 z-0" :style="{
-            background: `radial-gradient(ellipse at center, transparent 35%, rgba(100,0,0,${ambianceIntensity}) 100%)`,
+        <!-- Ambient layer: red vignette + pulsing, sits behind everything -->
+        <div class="ambient-layer pointer-events-none fixed inset-0 z-0" :style="{
+            background: `radial-gradient(ellipse at center, transparent 30%, rgba(220,20,20,${ambianceIntensity}) 100%)`,
             ...pulseStyle
         }"></div>
 
-        <!-- ─── Sidebar ─────────────────────────────────────────────── -->
+        <!-- ─── Sidebar ─────────────────────────────────────────── -->
         <aside class="flex w-60 flex-col border-r" style="background: #0d0d0d; border-color: #222">
 
-            <!-- Branding -->
+            <!-- Branding: the "A" fades in and the colour reddens with insanity -->
             <div class="shrink-0 px-5 py-6" style="border-bottom: 1px solid #1f1f1f">
-                <h1 class="text-base font-bold tracking-[0.25em]" :style="{ color: titleColor }">
+                <h1 class="title-effect text-base font-bold tracking-[0.25em]" :style="{ color: titleColor }">
                     CHAT <span :style="{ opacity: aOpacity }">A</span>NORMAL
                 </h1>
             </div>
 
-            <!-- Conversations -->
+            <!-- Conversation list (scrollable) -->
             <div class="min-h-0 flex-1 overflow-y-auto px-2 py-3">
                 <Link href="/ask"
                     class="mb-3 flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-300 transition"
@@ -150,7 +189,7 @@ const pulseStyle = computed(() => {
                 </div>
             </div>
 
-            <!-- Actions -->
+            <!-- Bottom actions: settings + logout (fixed) -->
             <div class="shrink-0 px-2 py-3" style="border-top: 1px solid #1f1f1f">
                 <button @click="showSettings = true"
                     class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-slate-400 transition hover:bg-white/5 hover:text-slate-200">
@@ -163,10 +202,10 @@ const pulseStyle = computed(() => {
             </div>
         </aside>
 
-        <!-- ─── Zone principale ────────────────────────────────────── -->
+        <!-- ─── Main area ────────────────────────────────────────── -->
         <div class="flex min-w-0 flex-1 flex-col">
 
-            <!-- Header : sélecteur de modèle -->
+            <!-- Header: model selector -->
             <header class="shrink-0 flex items-center px-6 py-3"
                 style="border-bottom: 1px solid #1f1f1f; background: #0d0d0d">
                 <select v-model="model" class="rounded-lg px-3 py-1.5 text-xs text-slate-300 outline-none transition"
@@ -177,17 +216,17 @@ const pulseStyle = computed(() => {
                 </select>
             </header>
 
-            <!-- Messages -->
-            <div class="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+            <!-- Message area (scrollable, ref used for auto-scroll) -->
+            <div ref="messageArea" class="min-h-0 flex-1 overflow-y-auto px-4 py-6">
                 <div class="mx-auto max-w-2xl space-y-4">
 
-                    <!-- Écran d'accueil si aucune conversation -->
+                    <!-- Empty state when no conversation is open -->
                     <div v-if="!props.conversation && !pendingUserMessage"
                         class="flex flex-col items-center justify-center py-24 text-center">
                         <h2 class="mb-3 text-2xl font-bold tracking-[0.3em]" style="color: #d4af37">CHAT NORMAL</h2>
                     </div>
 
-                    <!-- Messages stockés -->
+                    <!-- Stored messages -->
                     <div v-for="msg in props.messages" :key="msg.id"
                         :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
                         <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed" :style="msg.role === 'user'
@@ -197,7 +236,7 @@ const pulseStyle = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Message user en cours d'envoi -->
+                    <!-- User message being sent (shown instantly) -->
                     <div v-if="pendingUserMessage" class="flex justify-end">
                         <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
                             style="background: #1a1814; border: 1px solid #33302a; opacity: 0.7">
@@ -205,11 +244,12 @@ const pulseStyle = computed(() => {
                         </div>
                     </div>
 
-                    <!-- Réponse en streaming -->
+                    <!-- Streaming response (only while the stream is active) -->
                     <div v-if="isStreaming || isFetching" class="flex justify-start">
                         <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
                             style="background: #121212; border: 1px solid #1f1f1f">
                             <MarkdownRenderer v-if="streamingContent" :content="streamingContent" />
+                            <!-- Loading dots while waiting for the first token -->
                             <span v-else class="flex gap-1.5 py-1">
                                 <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"></span>
                                 <span class="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-500"
@@ -222,12 +262,13 @@ const pulseStyle = computed(() => {
                 </div>
             </div>
 
-            <!-- Zone de saisie (fixe en bas) -->
+            <!-- Input area (fixed at the bottom) -->
             <div class="shrink-0 px-4 pb-5 pt-3" style="border-top: 1px solid #1f1f1f; background: #0d0d0d">
                 <div class="mx-auto max-w-2xl">
                     <div class="flex items-end gap-2 rounded-2xl p-2"
                         style="background: #121212; border: 1px solid #2a2a2a">
-                        <textarea v-model="message" @keydown="handleKeydown" rows="1"
+                        <!-- Auto-growing textarea (ref used for autofocus) -->
+                        <textarea ref="textarea" v-model="message" @keydown="handleKeydown" rows="1"
                             class="min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600"
                             placeholder="Écrivez votre message… (Entrée pour envoyer)"
                             style="max-height: 160px; overflow-y: auto"
@@ -242,18 +283,34 @@ const pulseStyle = computed(() => {
             </div>
         </div>
 
-        <!-- Modale réglages -->
+        <!-- Settings modal -->
         <AiSettingsModal :open="showSettings" :profile="page.props.aiProfile" :shortcuts="page.props.shortcuts"
             @close="showSettings = false" />
     </div>
 </template>
 
 <style>
+/* Smooth colour shift of the title as insanity rises */
+.title-effect {
+    transition: color 1.2s ease;
+}
+
+/* Smooth shift of the root background */
+.bg-transition {
+    transition: background-color 1.5s ease;
+}
+
+/* Smooth change of the vignette intensity */
+.ambient-layer {
+    transition: background 1.2s ease;
+}
+
+/* Vignette breathing animation, applied from insanity level 5 */
 @keyframes pulse-ambiance {
 
     0%,
     100% {
-        opacity: 0.55;
+        opacity: 0.3;
     }
 
     50% {
@@ -261,10 +318,12 @@ const pulseStyle = computed(() => {
     }
 }
 
+/* Default calm background */
 .bg-normal {
     background: #0a0a0a;
 }
 
+/* "Broken reality" placeholder checkerboard, from insanity level 6 */
 .reality-broken {
     background-color: #000;
     background-image:

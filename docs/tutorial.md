@@ -1069,6 +1069,36 @@ with that in the template
 ```
 
 I choose to do a red gradient arround the page
+i added this at the bottom
+```php
+<style>
+@keyframes pulse-ambiance {
+
+    0%,
+    100% {
+        opacity: 0.55;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.bg-normal {
+    background: #0a0a0a;
+}
+
+.reality-broken {
+    background-color: #000;
+    background-image:
+        linear-gradient(45deg, #3d0a52 25%, transparent 25%, transparent 75%, #3d0a52 75%),
+        linear-gradient(45deg, #3d0a52 25%, transparent 25%, transparent 75%, #3d0a52 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
+}
+</style>
+```
+we can also see the @keyframe pulse-ambiance that add like a hearth beat arround the ui
 
 
 
