@@ -274,6 +274,8 @@ J'ai tenu un journal de tout ce que j'ai fait dans `docs/tutorial.md` ; la plupa
 - *Vue* : il m'a grandement aidé à trouver les balises et paramètres pour obtenir ce que je voulais.
 
 = Réflexion, améliorations & conclusion
+Actuellement, à chaque conversation je recharge la page en changeant la route parce que c'était l'architecture de base à laquelle j'avais pensé, mais ça cause des problèmes de reload surtout à partir d'une nouvelle discussion ce qui est un peu désagréable, je pourrais à la place changer le contenu direct des choses avec des composants par exemple (cest ptet à ca que ça sert inertia et vue //TODO vérifier).
+
 Ce projet m'a permis d'apprendre à utiliser un framework web complet, d'approfondir mes connaissances des requêtes HTTP vues dans le cours de réseau, et de mieux comprendre l'utilisation des routes et d'un ORM.
 .
 En conclusion, ce projet m'a fait progresser autant sur la conception d'une base de données relationnelle cohérente que sur le développement front-end et l'intégration d'une API d'IA en streaming.

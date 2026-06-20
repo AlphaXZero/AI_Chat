@@ -9,72 +9,34 @@ use Illuminate\Support\Facades\Http;
 use Psr\Http\Message\StreamInterface;
 
 /**
- * Service simplifié pour le streaming avec l'API OpenRouter.
+ * Streaming OpenRouter service: emits the model's response token by token via SSE.
  *
- * Exemple pédagogique utilisant le client HTTP de Laravel.
- *
- * @see https://openrouter.ai/docs/api/reference/streaming
+ * Compatible with Laravel's useStream on the front end. Echoes content directly
+ * to the output buffer while accumulating the full text to be stored afterwards.
  */
-class SimpleAskStreamService
+class SimpleAskStreamService extends BaseAskService
 {
-    public const DEFAULT_MODEL = 'openai/gpt-4o-mini';
-
-    private string $apiKey;
-    private string $baseUrl;
-
-    public function __construct()
-    {
-        $this->apiKey = config('services.openrouter.api_key');
-        $this->baseUrl = rtrim(config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
-    }
-
     /**
-     * Récupère la liste des modèles disponibles (avec cache).
-     */
-    public function getModels(): array
-    {
-        return cache()->remember('openrouter.models', now()->addHour(), function (): array {
-            $response = Http::withToken($this->apiKey)->get("{$this->baseUrl}/models");
-
-            return collect($response->json('data', []))
-                ->sortBy('name')
-                ->map(fn(array $model): array => [
-                    'id' => $model['id'],
-                    'name' => $model['name'],
-                    'description' => $model['description'] ?? '',
-                    'context_length' => $model['context_length'] ?? 0,
-                    'max_completion_tokens' => $model['top_provider']['max_completion_tokens'] ?? 0,
-                    'input_modalities' => $model['architecture']['input_modalities'] ?? [],
-                    'output_modalities' => $model['architecture']['output_modalities'] ?? [],
-                    'supported_parameters' => $model['supported_parameters'] ?? [],
-                ])
-                ->values()
-                ->toArray();
-        });
-    }
-
-
-
-    /**
-     * Stream un message en temps réel vers la sortie.
-     * Output le contenu texte directement (compatible avec useStream de Laravel).
+     * Stream a completion in real time to the output and return the full text.
+     *
+     * @param array<int, array{role: string, content: string}> $messages The conversation history
+     * @param string|null $model The model id to use (falls back to DEFAULT_MODEL)
+     * @param int $insanity The current insanity level, passed to the system prompt
+     * @return string The complete accumulated response, for storage
      */
     public function streamToOutput(
         array $messages,
         ?string $model = null,
-        float $temperature = 1.0,
-        ?string $reasoningEffort = null,
         int $insanity = 0,
-
     ): string {
-        $fullContent = '';   // ← accumulateur
+        $fullContent = '';
 
-        $response = $this->sendStreamRequest($messages, $model, $temperature, $reasoningEffort, $insanity);
+        $response = $this->sendStreamRequest($messages, $model, $insanity);
 
         if ($response->failed()) {
             echo "[ERROR] " . $response->json('error.message', 'HTTP Error');
             $this->flush();
-            return $fullContent;   // ← retourne (vide ici)
+            return $fullContent;
         }
 
         foreach ($this->parseSSEStream($response->toPsrResponse()->getBody()) as $event) {
@@ -86,22 +48,21 @@ class SimpleAskStreamService
 
             if ($event['type'] === 'content' && $event['data']) {
                 echo $event['data'];
-                $fullContent .= $event['data'];   // ← on accumule le vrai contenu
+                $fullContent .= $event['data'];
                 $this->flush();
             }
 
             if ($event['type'] === 'reasoning' && $event['data']) {
                 echo "[REASONING]" . $event['data'] . "[/REASONING]";
                 $this->flush();
-                // on n'accumule PAS le reasoning dans $fullContent (on ne le stocke pas en base)
             }
         }
 
-        return $fullContent;   // ← le texte complet, pour le stocker
+        return $fullContent;
     }
 
     /**
-     * Flush la sortie immédiatement.
+     * Flush the output buffer immediately so tokens reach the client in real time.
      */
     private function flush(): void
     {
@@ -112,25 +73,23 @@ class SimpleAskStreamService
     }
 
     /**
-     * Envoie la requête streaming à l'API.
+     * Send the streaming request to the API.
+     *
+     * @param array<int, array{role: string, content: string}> $messages The conversation history
+     * @param string|null $model The model id to use (falls back to DEFAULT_MODEL)
+     * @param int $insanity The current insanity level, passed to the system prompt
+     * @return \Illuminate\Http\Client\Response The raw streaming HTTP response
      */
     private function sendStreamRequest(
         array $messages,
         ?string $model,
-        float $temperature,
-        ?string $reasoningEffort,
         int $insanity,
     ): \Illuminate\Http\Client\Response {
         $payload = [
             'model' => $model ?? self::DEFAULT_MODEL,
-            'messages' => [$this->getSystemPrompt($insanity), ...$messages],
-            'temperature' => $temperature,
+            'messages' => [$this->getSystemPrompt('prompts.system', $insanity), ...$messages],
             'stream' => true,
         ];
-
-        if ($reasoningEffort !== null) {
-            $payload['reasoning'] = ['effort' => $reasoningEffort];
-        }
 
         return Http::withToken($this->apiKey)
             ->withHeaders([
@@ -143,9 +102,10 @@ class SimpleAskStreamService
     }
 
     /**
-     * Parse un stream SSE et yield les événements.
+     * Parse an SSE stream and yield each decoded event.
      *
-     * @return Generator<array{type: string, data: string|null}>
+     * @param StreamInterface $body The raw response body
+     * @return Generator<array{type: string, data: string|null}> The decoded events
      */
     private function parseSSEStream(StreamInterface $body): Generator
     {
@@ -166,7 +126,10 @@ class SimpleAskStreamService
     }
 
     /**
-     * Parse une ligne SSE.
+     * Parse a single SSE line into an event.
+     *
+     * @param string $line The raw SSE line
+     * @return array{type: string, data: string|null}|null The event, or null if the line is ignored
      */
     private function parseSSELine(string $line): ?array
     {
@@ -188,7 +151,10 @@ class SimpleAskStreamService
     }
 
     /**
-     * Parse le JSON d'un chunk SSE.
+     * Decode the JSON payload of an SSE chunk into an event.
+     *
+     * @param string $json The JSON string from the chunk
+     * @return array{type: string, data: string|null}|null The decoded event, or null if irrelevant
      */
     private function parseJSON(string $json): ?array
     {
@@ -217,24 +183,5 @@ class SimpleAskStreamService
         } catch (\JsonException) {
             return null;
         }
-    }
-
-    /**
-     * Retourne le prompt système.
-     */
-    private function getSystemPrompt(int $insanity): array
-    {
-        $user = auth()->user();
-        $profile = $user?->aiSettings->pluck('value', 'setting') ?? collect();
-
-        return [
-            'role' => 'system',
-            'content' => view('prompts.system', [
-                'now' => now()->locale('fr')->format('l d F Y H:i'),
-                'user' => $user?->name ?? 'l\'utilisateur',
-                'profile' => $profile,
-                'insanity' => $insanity,
-            ])->render(),
-        ];
     }
 }

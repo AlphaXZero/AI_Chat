@@ -84,7 +84,6 @@ class AskController extends Controller
             $conversation->update(['title' => trim($title)]);
         }
 
-        // Construit l'historique pour l'API
         $formated_history = $conversation->messages()
             ->orderBy('created_at')
             ->get()
@@ -93,7 +92,6 @@ class AskController extends Controller
 
         return response()->stream(
             function () use ($formated_history, $validated, $conversation) {
-                // Continue le traitement même si le client ferme la connexion
                 ignore_user_abort(true);
 
                 $fullResponse = $this->streamService->streamToOutput(

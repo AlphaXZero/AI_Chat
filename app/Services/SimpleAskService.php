@@ -7,75 +7,23 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Service simplifié pour communiquer avec l'API OpenRouter.
+ * Blocking OpenRouter service: sends a request and returns the full response at once.
  *
- * Exemple pédagogique utilisant le client HTTP de Laravel.
+ * Used for short, non-streamed completions such as generating a conversation title.
  */
-class SimpleAskService
+class SimpleAskService extends BaseAskService
 {
-    public const DEFAULT_MODEL = 'deepseek/deepseek-v4-flash';
-
-    private string $apiKey;
-    private string $baseUrl;
-
-    public function __construct()
-    {
-        $this->apiKey = config('services.openrouter.api_key');
-        $this->baseUrl = rtrim(config('services.openrouter.base_url', 'https://openrouter.ai/api/v1'), '/');
-    }
-
     /**
-     * Récupère la liste des modèles disponibles.
+     * Send a message to the model and return its full response.
      *
-     * @return array<int, array{
-     *     id: string,
-     *     name: string,
-     *     description: string,
-     *     context_length: int,
-     *     max_completion_tokens: int,
-     *     input_modalities: array<string>,
-     *     output_modalities: array<string>,
-     *     supported_parameters: array<string>
-     * }>
-     */
-    public function getModels(): array
-    {
-        return cache()->remember('openrouter.models', now()->addHour(), function (): array {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-            ])->get($this->baseUrl . '/models');
-
-            return collect($response->json('data', []))
-                ->sortBy('name')
-                ->map(fn(array $model): array => [
-                    'id' => $model['id'],
-                    'name' => $model['name'],
-                    'description' => $model['description'] ?? '',
-                    'context_length' => $model['context_length'] ?? 0,
-                    'max_completion_tokens' => $model['top_provider']['max_completion_tokens'] ?? 0,
-                    'input_modalities' => $model['architecture']['input_modalities'] ?? [],
-                    'output_modalities' => $model['architecture']['output_modalities'] ?? [],
-                    'supported_parameters' => $model['supported_parameters'] ?? [],
-                ])
-                ->values()
-                ->toArray()
-            ;
-        });
-    }
-
-    /**
-     * Envoie un message et retourne la réponse du modèle.
+     * @param array<int, array{role: string, content: string}> $messages The conversation history
+     * @param string|null $model The model id to use (falls back to DEFAULT_MODEL)
+     * @param string $system_prompt_file The Blade view used as the system prompt
+     * @return string The model's response content
      *
-     * @param array<int, array{
-     *     role: 'assistant'|'system'|'tool'|'user',
-     *     content: array<int, array{
-     *         type: 'image_url'|'text',
-     *         text?: string,
-     *         image_url?: array{url: string, detail?: string}
-     *     }>|string
-     * }> $messages
+     * @throws \RuntimeException If the API call fails
      */
-    public function sendMessage(array $messages, ?string $model = null, string $system_prompt_file = "prompts.system", float $temperature = 1.0): string
+    public function sendMessage(array $messages, ?string $model = null, string $system_prompt_file = "prompts.system"): string
     {
         $model = $model ?? self::DEFAULT_MODEL;
         $messages = [$this->getSystemPrompt($system_prompt_file), ...$messages];
@@ -90,36 +38,13 @@ class SimpleAskService
             ->post($this->baseUrl . '/chat/completions', [
                 'model' => $model,
                 'messages' => $messages,
-                'temperature' => $temperature,
             ]);
 
-        // Gestion des erreurs
         if ($response->failed()) {
             $error = $response->json('error.message', 'Erreur inconnue');
             throw new \RuntimeException("Erreur API: {$error}");
         }
 
         return $response->json('choices.0.message.content', '');
-    }
-
-    /**
-     * Retourne le prompt système.
-     *
-     * @return array{role: 'system', content: string}
-     */
-    private function getSystemPrompt(string $system_prompt_file): array
-    {
-        $user = auth()->user();
-        $now = now()->locale('fr')->format('l d F Y H:i');
-        $profile = $user?->aiSettings->pluck('value', 'setting') ?? collect();
-
-        return [
-            'role' => 'system',
-            'content' => view($system_prompt_file, [
-                'now' => $now,
-                'user' => $user?->name ?? 'l\'utilisateur',
-                'profile' => $profile,
-            ])->render(),
-        ];
     }
 }
