@@ -56,7 +56,7 @@ Tout d'abord, j'utilise cette instruction sur claude: *"Quand je demande d'appre
 
 Je l'ai également utilisé pour corriger orthographiquement et syntaxiquement le rapport, le `tutorial.md` et le `README.md`.
 
-Les seules fois où je l'ai vraiment utilisé pour avoir de vrais bouts de code, c'était quand j'ai dû adapter le projet pour utiliser le streaming, pour m'aider à faire les différentes Vue et pour génerer le Tailwind que j'ai un tout petit peu modifié par la suite.
+Les seules fois où je l'ai vraiment utilisé pour avoir de vrais bouts de code, c'était quand j'ai dû adapter le projet pour utiliser le streaming, pour m'aider à faire et organiser les différentes Vue ainsi que pour génerer le Tailwind que j'ai un tout petit peu modifié par la suite.
 
 #pagebreak()
 

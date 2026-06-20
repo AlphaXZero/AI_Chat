@@ -1100,6 +1100,55 @@ i added this at the bottom
 ```
 we can also see the @keyframe pulse-ambiance that add like a hearth beat arround the ui
 
+### favorite_ia in settings
+we already load the models in the index.vue so we need to give them in the setting modal props, :favorite_ia="model" and favorite_ia to know which one is currently selected
+```html
+        <AiSettingsModal :open="showSettings" :profile="page.props.aiProfile" :shortcuts="page.props.shortcuts"
+            :models="props.models" :favorite_ia="model" @close="showSettings = false" />
+    </div>
+```
+now we had them in the props of aisettingsmodals.vue
+```vue
+const props = defineProps({
+    open: Boolean,
+    profile: { type: Object, default: () => ({}) },
+    shortcuts: { type: Array, default: () => [] },
+    models: { type: Array, default: () => [] },
+    favorite_ia: { type: String, default: "" }
+})
+```
+we need to add favorite_ia in useForm as its only readonly when in props
+```
+const form = useForm({
+    favorite_ia: props.favorite_ia,
+    profile: {
+        emojis: props.profile.emojis ?? 'non',
+        tone: props.profile.tone ?? 'neutre',
+        length: props.profile.length ?? 'normal',
+    },
+    shortcuts: [...props.shortcuts],
+})
+```
+we add the select now
+```html
+            <!-- ─── Favorite ia ──────── -->
+            <section class="mt-6 space-y-3">
+                <h3 class="text-xs font-medium uppercase tracking-wider text-slate-500">Modèle d'ia favorite</h3>
+
+                <div>
+                    <label class="mb-1.5 block text-sm text-slate-300">Modèle par défaut</label>
+                    <select v-model="form.favorite_ia"
+                        class="w-full rounded-lg px-3 py-2 text-sm text-slate-200 outline-none transition"
+                        style="background: #161616; border: 1px solid #2a2a2a">
+                        <option v-for="m in props.models" :key="m.id" :value="m.id">
+                            {{ m.name }}
+                        </option>
+                    </select>
+                </div>
+            </section>
+```
+
+
 
 
 ## Misc

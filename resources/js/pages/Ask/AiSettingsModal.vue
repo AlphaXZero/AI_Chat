@@ -6,13 +6,16 @@ const props = defineProps({
     open: Boolean,
     profile: { type: Object, default: () => ({}) },
     shortcuts: { type: Array, default: () => [] },
+    models: { type: Array, default: () => [] },
+    favorite_ia: { type: String, default: "" }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'updated'])
 
 // Form holding the assistant profile and the user's custom shortcuts.
 // Falls back to sensible defaults when a profile value is missing.
 const form = useForm({
+    favorite_ia: props.favorite_ia,
     profile: {
         emojis: props.profile.emojis ?? 'non',
         tone: props.profile.tone ?? 'neutre',
@@ -26,7 +29,14 @@ const addShortcut = () => form.shortcuts.push({ command: '', instruction: '' })
 const removeShortcut = (index) => form.shortcuts.splice(index, 1)
 
 // Persist the settings, then close the modal on success
-const save = () => form.patch('/settings/ai', { onSuccess: () => emit('close') })
+const save = () => {
+    form.patch('/settings/ai', {
+        onSuccess: () => {
+            emit('updated', form.favorite_ia)
+            emit('close')
+        }
+    })
+}
 </script>
 
 <template>
@@ -45,6 +55,21 @@ const save = () => form.patch('/settings/ai', { onSuccess: () => emit('close') }
                     <X :size="18" />
                 </button>
             </div>
+            <!-- ─── Favorite ia ──────── -->
+            <section class="mt-6 space-y-3">
+                <h3 class="text-xs font-medium uppercase tracking-wider text-slate-500">Modèle d'ia favorite</h3>
+
+                <div>
+                    <label class="mb-1.5 block text-sm text-slate-300">Modèle par défaut</label>
+                    <select v-model="form.favorite_ia"
+                        class="w-full rounded-lg px-3 py-2 text-sm text-slate-200 outline-none transition"
+                        style="background: #161616; border: 1px solid #2a2a2a">
+                        <option v-for="m in props.models" :key="m.id" :value="m.id">
+                            {{ m.name }}
+                        </option>
+                    </select>
+                </div>
+            </section>
 
             <!-- ─── Profile: how the assistant should answer ──────── -->
             <section class="space-y-4">
