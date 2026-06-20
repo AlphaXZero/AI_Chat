@@ -176,17 +176,39 @@ Ce projet, réalisé dans le cadre du cours de développement et SGBD, consiste 
 = Thème et identité
 == Thème choisi
 Comme son titre l'indique, c'est juste un chat IA normal qui répond aux questions des utilisateurs. Seulement, plus on interagit avec lui, plus il sombre dans la folie, comme le ferait un personnage lovecraftien. Ainsi, au fil de la discussion, il devient incohérent, oublie ou rajoute des mots, et divague. L'interface change également en réponse : le titre passe de « Chat Normal » à « Chat Anormal », un gradient rouge s'applique sur les bords pour créer un effet tunnel, et si l'on parle assez longtemps, le fond change de couleur pour donner une impression de bug.
-//TODO 3 captures pour interface
+
+#figure(
+  image("/docs/images/foliebasse.png", width: 92%),
+  caption: [Interface avec le niveau de folie le plus bas.],
+)
+#figure(
+  image("/docs/images/foliemoy.png", width: 92%),
+  caption: [Interface avec un niveau de folie bas.],
+)
+#figure(
+  image("/docs/images/foliehaute.png", width: 92%),
+  caption: [Interface avec un niveau de folie moyen.],
+)
+#figure(
+  image("/docs/images/foliemax.png", width: 92%),
+  caption: [Interface avec un niveau de folie maximal.],
+)
+
 == Personnalisation de l'IA
 Un bouton en bas à gauche permet de configurer, à l'aide d'une modale, la façon dont l'IA nous répond :
 - *Emojis* : si l'on veut des réponses avec des smileys
 - *Ton* : si l'on veut que l'IA prenne un ton formel, décontracté, normal ou neutre
 - *Longueur des réponses* : pour configurer si l'on veut des réponses courtes ou longues
 
+#figure(
+  image("/docs/images/modal.png", width: 92%),
+  caption: [Aperçu de la modale de configuration.],
+)
+
 Dans cette même modale, on peut également définir des raccourcis personnalisables.
 Par exemple : `/corrige` = « corrige-moi l'orthographe et la syntaxe » \
 Ainsi, lorsque l'utilisateur écrira `/corrige jadorre lé fruit`, le site convertira le `/corrige` et l'assistant corrigera la phrase.
-//TODO image configuration + lien
+
 
 == Personnalité de l'IA & instructions système
 La personnalité de l'IA est entièrement pilotée par un system prompt construit dynamiquement selon le niveau d'insanité de la conversation. Plus ce niveau monte, plus les instructions données à l'IA l'invitent à incarner la folie. Le prompt insiste sur le fait que l'IA doit *incarner* la folie plutôt que la jouer, à la manière d'un narrateur lovecraftien dont l'esprit se désintègre. Voici un extrait des paliers :
@@ -222,12 +244,6 @@ Avec la table `message`, nous avons le contenu de chaque message ainsi que le r�
 *Clé étrangère* vers `conversation`, pour reconstituer l'historique de la communication avec l'assistant.
 La relation est `Conversation "1" --> "1..*" Message` car une conversation n'est créée que lorsque le premier message est entré.
 
-=== Table Image
-Elle permet de stocker les images avec une URL (en base64) et un placeholder si l'image ne charge pas.
-//TODO vérifier puis mettre à jour quand en place
-*Clé étrangère* vers `conversation`.
-La relation est `Message "1" --> "0..*" Image` car une conversation n'est pas obligée d'avoir une image.
-
 == Contraintes
 Toutes les tables ayant une clé étrangère possèdent la contrainte `deleteOnCascade`, afin de ne pas surcharger la base de données. Par exemple, lorsqu'une conversation est supprimée, cela supprime les messages en cascade.
 //TODO ajouter screen + glossaire pour delete on cascade
@@ -259,8 +275,10 @@ La réponse de l'IA est affichée en temps réel grâce aux #glossaire(<glossair
 //TODO ajouter fonctionnalités dans le TODO du README
 
 = Difficultés rencontrées
+J'ai voulu ajouter la génération d'images en commencant par log la reponse à la requête pour car ça manquait de précision sur openrouter mais je ne pouvais pas faire de reqêtes même avec le modèle le plus économiuqe, ça me sortait la limite de tokens. J'ai donc abandonné l'idée
+
 J'ai tenu un journal de tout ce que j'ai fait dans `docs/tutorial.md` ; la plupart des difficultés peuvent y être consultées, mais en voici un exemple.
-//TODO ajouter un truc cool avec capture
+//TODO ajouter le bouton pour supprimer
 
 = Tests
 //TODO faire test

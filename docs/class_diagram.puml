@@ -28,13 +28,7 @@ class Message {
   content: string
   created_at: timestamp
 }
-class Image {
-  id: int
-  url: string
-  placeholder: string
-}
 User "1" -- "0..*" Conversation : has >
 User "1" -- "0..*" AiSetting : has settings >
 Conversation "1" -- "1..*" Message : is made of >
-Message "1" -- "0..*" Image : contains >
 @enduml
