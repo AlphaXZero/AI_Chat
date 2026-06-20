@@ -10,6 +10,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+// Form holding the assistant profile and the user's custom shortcuts.
+// Falls back to sensible defaults when a profile value is missing.
 const form = useForm({
     profile: {
         emojis: props.profile.emojis ?? 'non',
@@ -19,29 +21,24 @@ const form = useForm({
     shortcuts: [...props.shortcuts],
 })
 
-const addShortcut = () => {
-    form.shortcuts.push({ command: '', instruction: '' })
-}
+// ─── Shortcut management ──────────────────────────────────────
+const addShortcut = () => form.shortcuts.push({ command: '', instruction: '' })
+const removeShortcut = (index) => form.shortcuts.splice(index, 1)
 
-const removeShortcut = (index) => {
-    form.shortcuts.splice(index, 1)
-}
-
-const save = () => {
-    form.patch('/settings/ai', { onSuccess: () => emit('close') })
-}
+// Persist the settings, then close the modal on success
+const save = () => form.patch('/settings/ai', { onSuccess: () => emit('close') })
 </script>
 
 <template>
-    <!-- Overlay -->
+    <!-- Overlay (click outside closes the modal) -->
     <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center p-4"
         style="background: rgba(0,0,0,0.75)" @click.self="emit('close')">
 
-        <!-- Fenêtre -->
+        <!-- Modal window -->
         <div class="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-6 text-slate-100"
             style="background: #0d0d0d; border: 1px solid #2a2a2a">
 
-            <!-- En-tête -->
+            <!-- Header -->
             <div class="mb-6 flex items-center justify-between">
                 <h2 class="text-base font-bold tracking-[0.15em]" style="color: #d4af37">INSTRUCTIONS</h2>
                 <button @click="emit('close')" class="text-slate-500 transition hover:text-slate-200">
@@ -49,7 +46,7 @@ const save = () => {
                 </button>
             </div>
 
-            <!-- PROFIL -->
+            <!-- ─── Profile: how the assistant should answer ──────── -->
             <section class="space-y-4">
                 <h3 class="text-xs font-medium uppercase tracking-wider text-slate-500">Comportement de l'assistant</h3>
 
@@ -88,7 +85,7 @@ const save = () => {
                 </div>
             </section>
 
-            <!-- RACCOURCIS -->
+            <!-- ─── Custom shortcuts (/command -> instruction) ────── -->
             <section class="mt-6 space-y-3">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-medium uppercase tracking-wider text-slate-500">Raccourcis</h3>
@@ -111,12 +108,13 @@ const save = () => {
                     </button>
                 </div>
 
+                <!-- Empty state -->
                 <p v-if="form.shortcuts.length === 0" class="text-xs text-slate-600">
                     Aucun raccourci. Cliquez sur « Ajouter ».
                 </p>
             </section>
 
-            <!-- ACTIONS -->
+            <!-- ─── Actions ──────────────────────────────────────── -->
             <div class="mt-8 flex justify-end gap-2">
                 <button @click="emit('close')"
                     class="rounded-lg px-4 py-2 text-sm text-slate-500 transition hover:text-slate-200">

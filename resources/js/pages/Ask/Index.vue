@@ -12,7 +12,6 @@ const props = defineProps({
     selectedModel: String,
     conversation: Object,
     messages: Array,
-    error: String,
 })
 
 // ─── Local state ──────────────────────────────────────────────
@@ -36,18 +35,20 @@ const { data, isStreaming, isFetching, send } = useStream('/ask', {
         const id = response.headers.get('X-Conversation-Id')
         if (id) newConversationId.value = id
     },
-    // Once the stream ends, refresh the page (or navigate to the new conversation)
+    // Once the stream ends, refresh the page (or navigate to the new conversation).
+    // Only the conversation-related props are reloaded: the model list never changes
+    // between two messages, so reloading it would be wasted work.
     onFinish: () => {
         const targetId = newConversationId.value ?? props.conversation?.id
         message.value = ''
         pendingUserMessage.value = ''
 
         if (props.conversation?.id) {
-            router.reload()
+            router.reload({ only: ['conversation', 'messages'] })
         } else if (targetId) {
             router.visit(`/conversations/${targetId}`)
         } else {
-            router.reload()
+            router.reload({ only: ['conversation', 'messages'] })
         }
     },
     onError: (err) => {
@@ -72,7 +73,6 @@ const scrollToBottom = () => {
     })
 }
 watch(streamingContent, scrollToBottom)
-watch(pendingUserMessage, scrollToBottom)
 watch(() => props.messages, scrollToBottom, { deep: true })
 
 // ─── Lifecycle ────────────────────────────────────────────────
@@ -92,6 +92,7 @@ const submit = () => {
         model: model.value,
         conversation_id: props.conversation?.id ?? null,
     })
+    scrollToBottom()
     textarea.value?.focus()   // keep focus on the input after sending
 }
 
@@ -103,39 +104,39 @@ const handleKeydown = (e) => {
     }
 }
 
+// Resize the textarea to fit its content
+const autoGrow = (e) => {
+    e.target.style.height = 'auto'
+    e.target.style.height = e.target.scrollHeight + 'px'
+}
+
 const logout = () => router.post('/logout')
 const deleteConversation = (id) => router.delete(`/conversations/${id}`)
 
 // ─── Insanity-driven visual effects ───────────────────────────
 // Opacity of the "A" in (A)NORMAL: invisible when sane, fully shown from level 5
 const aOpacity = computed(() => {
-    if (insanity.value >= 5) return 1
-    return insanity.value * 0.03
+    const i = insanity.value
+    return i >= 5 ? 1 : i * 0.03
 })
 
 // Title colour: shifts from gold to vivid red as insanity rises (max red at 6)
 const titleColor = computed(() => {
-    const i = insanity.value
-    if (i <= 0) return '#d4af37'
-    if (i === 1) return '#dc9730'
-    if (i === 2) return '#e37e2a'
-    if (i === 3) return '#e96323'
-    if (i === 4) return '#f0451c'
-    if (i === 5) return '#f72612'
-    return '#ff0000'
+    const colours = ['#d4af37', '#dc9730', '#e37e2a', '#e96323', '#f0451c', '#f72612']
+    return colours[insanity.value] ?? '#ff0000'
 })
 
 // Red vignette intensity: barely visible up to level 4, then ramps up
 const ambianceIntensity = computed(() => {
     const i = insanity.value
-    if (i <= 4) return i * 0.02
-    return Math.min(0.15 + (i - 4) * 0.2, 0.9)
+    return i <= 4 ? i * 0.02 : Math.min(0.15 + (i - 4) * 0.2, 0.9)
 })
 
 // Vignette pulsing: starts at level 5 and speeds up afterwards
 const pulseStyle = computed(() => {
-    if (insanity.value < 5) return {}
-    const speed = Math.max(5 - (insanity.value - 5) * 0.5, 1.8)
+    const i = insanity.value
+    if (i < 5) return {}
+    const speed = Math.max(5 - (i - 5) * 0.5, 1.8)
     return { animation: `pulse-ambiance ${speed}s ease-in-out infinite` }
 })
 </script>
@@ -268,11 +269,10 @@ const pulseStyle = computed(() => {
                     <div class="flex items-end gap-2 rounded-2xl p-2"
                         style="background: #121212; border: 1px solid #2a2a2a">
                         <!-- Auto-growing textarea (ref used for autofocus) -->
-                        <textarea ref="textarea" v-model="message" @keydown="handleKeydown" rows="1"
+                        <textarea ref="textarea" v-model="message" @keydown="handleKeydown" @input="autoGrow" rows="1"
                             class="min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-600"
                             placeholder="Écrivez votre message… (Entrée pour envoyer)"
-                            style="max-height: 160px; overflow-y: auto"
-                            @input="$event.target.style.height = 'auto'; $event.target.style.height = $event.target.scrollHeight + 'px'" />
+                            style="max-height: 160px; overflow-y: auto" />
                         <button @click="submit" :disabled="isStreaming || isFetching || !message.trim()"
                             class="mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition disabled:opacity-30"
                             style="background: #d4af37; color: #0a0a0a">
